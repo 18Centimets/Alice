@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -507,7 +507,7 @@
                 <div class="glass-card" style="overflow:hidden;">
                     <div class="table-toolbar"><span style="font-weight:600">👥 Danh Sách Tài Khoản Hệ Thống</span></div>
                     <table class="menu-table">
-                        <thead><tr><th>Tài Khoản</th><th>Họ Tên</th><th>Vai Trò</th><th>Phân Quyền</th></tr></thead>
+                        <thead><tr><th>Tài Khoản</th><th>Họ Tên</th><th>Vai Trò</th><th>Phân Quyền</th><th style="width:100px;">Thao Tác</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
@@ -595,11 +595,13 @@
             <div class="profile-container" style="max-width:800px; margin:0 auto;">
                 <!-- Cover & Avatar -->
                 <div class="profile-header glass-card" style="padding:0; overflow:hidden; position:relative; margin-bottom:20px;">
-                    <div class="profile-cover" style="height:200px; background:linear-gradient(135deg, var(--primary), #8B5CF6); background-size:cover; background-position:center; position:relative;">
-                        <button style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); color:#fff; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:5px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Đổi ảnh bìa</button>
+                    <div class="profile-cover" id="profile-cover-display" style="height:200px; background:linear-gradient(135deg, var(--primary), #8B5CF6); background-size:cover; background-position:center; position:relative;">
+                        <input type="file" id="cover-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'cover')">
+                        <button id="btn-edit-cover" onclick="document.getElementById('cover-upload').click()" style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); color:#fff; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:5px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Đổi ảnh bìa</button>
                     </div>
                     <div class="profile-avatar-wrapper" style="position:relative; margin-top:-60px; margin-left:30px; display:flex; align-items:flex-end; padding-bottom:20px;">
-                        <div class="profile-avatar" id="profile-avatar-display" style="width:120px; height:120px; border-radius:50%; background:#1a1a1a; border:4px solid var(--card); display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:bold; color:var(--primary); overflow:hidden;">
+                        <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'avatar')">
+                        <div class="profile-avatar" id="profile-avatar-display" onclick="if(document.getElementById('btn-save-profile').style.display !== 'none') document.getElementById('avatar-upload').click()" style="width:120px; height:120px; border-radius:50%; background:#1a1a1a; border:4px solid var(--card); display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:bold; color:var(--primary); overflow:hidden; cursor:pointer; background-size:cover; background-position:center;">
                             A
                         </div>
                         <div class="profile-title" style="margin-left:20px; padding-bottom:10px;">
@@ -637,7 +639,7 @@
                             <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Địa chỉ hiện tại</label>
                             <input type="text" id="profile-input-address" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Số nhà, đường, quận/huyện...">
                         </div>
-                        <button class="btn-action primary" onclick="saveProfile()" style="width:100%; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem;">Lưu Thay Đổi</button>
+                        <button id="btn-save-profile" class="btn-action primary" onclick="saveProfile()" style="width:100%; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem;">Lưu Thay Đổi</button>
                     </div>
                 </div>
             </div>

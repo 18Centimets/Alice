@@ -17,9 +17,9 @@ const SYSTEM_USERS = [
     { id:'user01',     password:'User@2024#',  role:'user',           name:'Nhân Viên Phục Vụ' }
 ];
 const ROLE_PAGES = {
-    administrator: ['menu-manager','add-item','revenue','inventory','inv-export','expenses','summary','logs','users','shifts'],
-    admin:         ['menu-manager','add-item','inventory','inv-export','expenses','summary','logs','shifts'],
-    user:          ['expenses','revenue','inv-export']
+    administrator: ['menu-manager','add-item','revenue','inventory','inv-export','expenses','summary','logs','users','shifts','profile'],
+    admin:         ['menu-manager','add-item','inventory','inv-export','expenses','summary','logs','shifts','users','profile'],
+    user:          ['expenses','revenue','inv-export','users','profile']
 };
 // Pages that Administrator can grant/revoke for lower accounts
 const GRANTABLE_PAGES = [
@@ -214,6 +214,7 @@ function switchPage(pageId) {
     const targetNav = document.getElementById(navIdMap[pageId] || `nav-${pageId}`);
     if (targetPage) targetPage.classList.add('active');
     if (targetNav)  targetNav.classList.add('active');
+    if (pageId === 'profile') { if (!window.isOpeningOtherProfile) currentEditingProfileId = currentUser.id; window.isOpeningOtherProfile = false; loadProfileUI(); }
     const titles = {
         'menu-manager':'Qu\u1ea3n L\u00fd Th\u1ef1c \u0110\u01a1n','add-item':'Th\u00eam M\u00f3n M\u1edbi',
         'revenue':'T\u1ed5ng H\u1ee3p Doanh Thu','inventory':'V\u1eadt T\u01b0 T\u1ed3n Kho',
@@ -1038,7 +1039,7 @@ function renderLogs() {
             '<td><strong>' + l.userName + '</strong><br><small style="color:var(--text-muted)">' + l.userId + '</small></td>' +
             '<td><span class="log-role-badge ' + (roleCls[l.role]||'') + '">' + (ROLE_LABELS[l.role]||l.role) + '</span></td>' +
             '<td><span class="log-action-badge">' + l.action + '</span></td>' +
-            '<td style="color:var(--text-muted);font-size:.85rem">' + l.detail + '</td></tr>';
+            '<td style="color:var(--text-muted);font-size:.85rem">' + l.detail + '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\\'' + u.id + '\\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
     }).join('');
 }
 function clearLogs() {
@@ -1086,7 +1087,7 @@ function renderUsersPage() {
             '<td><span class="cat-badge ' + (roleCls[u.role]||'') + '">' + (ROLE_LABELS[u.role]||u.role) + '</span></td>' +
             '<td>' + getEffectivePages(u.id, u.role).length + ' trang • ' +
             (customPages.length > 0 ? '<span style="color:var(--primary);font-size:.78rem">➕ ' + customPages.length + ' quyền thêm</span>' : '<span style="color:var(--text-muted);font-size:.78rem">quyền cơ bản</span>') +
-            '</td></tr>';
+            '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\\'' + u.id + '\\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
 
         return mainRow + toggleHtml;
     }).join('');
@@ -1142,69 +1143,183 @@ function renderShifts() {
     }).join('');
 }
 
+
 // ==========================================
 //  PROFILE PAGE & SHIFT (ADMIN PANEL)
 // ==========================================
-function loadProfileUI() {
+let currentEditingProfileId = null;
+let currentProfileAvatarBase64 = null;
+let currentProfileCoverBase64 = null;
+
+function openUserProfile(targetId) {
     if (!currentUser) return;
-    const profile = (globalProfiles && globalProfiles[currentUser.id]) || {};
+    const targetUser = SYSTEM_USERS.find(u => u.id === targetId);
+    if (!targetUser) return;
+    
+    // Permission check
+    const rank = { administrator: 3, admin: 2, user: 1 };
+    const myRank = rank[currentUser.role];
+    const targetRank = rank[targetUser.role];
+    
+    let canEdit = false;
+    if (currentUser.id === targetId) {
+        canEdit = true; // can edit self
+    } else if (myRank > targetRank) {
+        canEdit = true; // can edit subordinates
+    } else if (myRank === 3 && targetRank === 3) {
+        canEdit = true; // superadmin can edit superadmin
+    } else {
+        canEdit = false; // Cannot edit
+    }
+    
+    window.isOpeningOtherProfile = true;
+    currentEditingProfileId = targetId;
+    switchPage('profile');
+    loadProfileUI(canEdit, targetUser);
+}
+
+function loadProfileUI(canEdit = true, targetUserObj = null) {
+    if (!currentUser) return;
+    
+    // If no specific profile is requested, load self
+    if (!currentEditingProfileId) currentEditingProfileId = currentUser.id;
+    if (currentEditingProfileId === currentUser.id) canEdit = true;
+    
+    const targetId = currentEditingProfileId;
+    let tUser = targetUserObj || SYSTEM_USERS.find(u => u.id === targetId);
+    if (!tUser) tUser = currentUser;
+    
+    const profile = (globalProfiles && globalProfiles[targetId]) || {};
+    currentProfileAvatarBase64 = profile.avatar || null;
+    currentProfileCoverBase64 = profile.cover || null;
     
     // UI Setup
-    document.getElementById('profile-display-name').innerText = profile.name || currentUser.name || 'Người dùng';
-    document.getElementById('profile-display-role').innerText = ROLE_LABELS[currentUser.role] || currentUser.role;
+    document.getElementById('profile-display-name').innerText = profile.name || tUser.name || 'Người dùng';
+    document.getElementById('profile-display-role').innerText = ROLE_LABELS[tUser.role] || tUser.role;
     
     // Avatar init
-    const initial = (profile.name || currentUser.name || 'A').charAt(0).toUpperCase();
-    document.getElementById('profile-avatar-display').innerText = initial;
+    const avatarEl = document.getElementById('profile-avatar-display');
+    if (currentProfileAvatarBase64) {
+        avatarEl.style.backgroundImage = `url(${currentProfileAvatarBase64})`;
+        avatarEl.innerText = '';
+    } else {
+        avatarEl.style.backgroundImage = 'none';
+        avatarEl.innerText = (profile.name || tUser.name || 'A').charAt(0).toUpperCase();
+    }
+    
+    // Cover init
+    const coverEl = document.getElementById('profile-cover-display');
+    if (currentProfileCoverBase64) {
+        coverEl.style.backgroundImage = `url(${currentProfileCoverBase64})`;
+    } else {
+        coverEl.style.backgroundImage = `linear-gradient(135deg, var(--primary), #8B5CF6)`;
+    }
     
     // Inputs
     const nInp = document.getElementById('profile-input-name');
     const pInp = document.getElementById('profile-input-phone');
     const aInp = document.getElementById('profile-input-address');
-    if (nInp && !nInp.value) nInp.value = profile.name || currentUser.name || '';
-    if (pInp && !pInp.value) pInp.value = profile.phone || '';
-    if (aInp && !aInp.value) aInp.value = profile.address || '';
+    if (nInp) { nInp.value = profile.name || tUser.name || ''; nInp.disabled = !canEdit; }
+    if (pInp) { pInp.value = profile.phone || ''; pInp.disabled = !canEdit; }
+    if (aInp) { aInp.value = profile.address || ''; aInp.disabled = !canEdit; }
     
-    updateAdminShiftUI();
+    // Buttons
+    document.getElementById('btn-save-profile').style.display = canEdit ? 'block' : 'none';
+    document.getElementById('btn-edit-cover').style.display = canEdit ? 'block' : 'none';
+    
+    updateAdminShiftUI(targetId);
 }
 
 function saveProfile() {
-    if (!currentUser) return;
+    if (!currentEditingProfileId) return;
+    const targetId = currentEditingProfileId;
+    
     const name = document.getElementById('profile-input-name').value.trim();
     const phone = document.getElementById('profile-input-phone').value.trim();
     const address = document.getElementById('profile-input-address').value.trim();
     
     if (!name) { showToast('Vui lòng nhập họ tên!', 'error'); return; }
     
-    db.ref('userProfiles/' + currentUser.id).set({
-        name, phone, address
+    // Keep existing data if not changing images
+    const currentData = (globalProfiles && globalProfiles[targetId]) || {};
+    
+    db.ref('userProfiles/' + targetId).set({
+        ...currentData,
+        name, phone, address,
+        avatar: currentProfileAvatarBase64 || currentData.avatar || null,
+        cover: currentProfileCoverBase64 || currentData.cover || null
     });
     
     showToast('✅ Đã cập nhật hồ sơ cá nhân!');
 }
 
-function updateAdminShiftUI() {
+function handleImageUpload(event, type) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Resize constraints
+            const MAX_WIDTH = type === 'avatar' ? 400 : 1200;
+            const MAX_HEIGHT = type === 'avatar' ? 400 : 400;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > height) {
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+            } else {
+                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // compress to 70% JPEG
+            
+            if (type === 'avatar') {
+                currentProfileAvatarBase64 = dataUrl;
+                document.getElementById('profile-avatar-display').style.backgroundImage = `url(${dataUrl})`;
+                document.getElementById('profile-avatar-display').innerText = '';
+            } else {
+                currentProfileCoverBase64 = dataUrl;
+                document.getElementById('profile-cover-display').style.backgroundImage = `url(${dataUrl})`;
+            }
+        }
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+function updateAdminShiftUI(targetId = null) {
+    if(!targetId && currentUser) targetId = currentUser.id;
     const btnIn = document.getElementById('profile-btn-checkin');
     const btnOut = document.getElementById('profile-btn-checkout');
     const statusTxt = document.getElementById('profile-shift-today');
-    if (!btnIn || !btnOut || !currentUser) return;
+    if (!btnIn || !btnOut || !targetId) return;
     
-    const sid = currentUser.id;
     const dateStr = new Date().toISOString().slice(0,10);
     const shifts = globalShifts || [];
-    const activeShift = shifts.find(s => s.userId === sid && s.date === dateStr && !s.out);
+    const activeShift = shifts.find(s => s.userId === targetId && s.date === dateStr && !s.out);
+    
+    // Only allow checking in/out if looking at own profile
+    const isMe = currentUser && currentUser.id === targetId;
     
     if (activeShift) {
         btnIn.style.display = 'none';
-        btnOut.style.display = 'block';
+        btnOut.style.display = isMe ? 'block' : 'none';
         const dIn = new Date(activeShift.in);
         statusTxt.innerHTML = `<span style="color:#2ecc71">Đang làm việc (vào lúc ${dIn.toLocaleTimeString('vi-VN')})</span>`;
     } else {
-        btnIn.style.display = 'block';
+        btnIn.style.display = isMe ? 'block' : 'none';
         btnOut.style.display = 'none';
         
-        // Find if they worked today
-        const finishedShifts = shifts.filter(s => s.userId === sid && s.date === dateStr && s.out);
+        const finishedShifts = shifts.filter(s => s.userId === targetId && s.date === dateStr && s.out);
         if (finishedShifts.length > 0) {
             let totalMs = 0;
             finishedShifts.forEach(s => totalMs += (s.out - s.in));
@@ -1220,7 +1335,6 @@ function updateAdminShiftUI() {
 function checkIn() {
     if (!currentUser) return;
     const shifts = globalShifts || [];
-    
     shifts.push({
         id: 'shift_' + Date.now(),
         userId: currentUser.id,
@@ -1229,7 +1343,6 @@ function checkIn() {
         in: new Date().getTime(),
         out: null
     });
-    
     db.ref('shifts').set(shifts);
     showToast('✅ Đã bắt đầu ca làm việc!');
 }
@@ -1238,7 +1351,6 @@ function checkOut() {
     if (!currentUser) return;
     const shifts = globalShifts || [];
     const dateStr = new Date().toISOString().slice(0,10);
-    
     const activeShift = shifts.find(s => s.userId === currentUser.id && s.date === dateStr && !s.out);
     if (activeShift) {
         activeShift.out = new Date().getTime();
