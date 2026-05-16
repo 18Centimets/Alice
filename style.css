@@ -254,3 +254,27 @@ h1,h2,h3{font-family:'Playfair Display',serif;}
 .payment-card.selected{border-color:var(--primary);background:var(--primary-soft);}
 .pay-icon{font-size:1.4rem;}
 .pay-name{font-weight:600;font-size:.9rem;}
+
+/* ===== PRINT RECEIPT STYLES ===== */
+@media print {
+    body * { display: none !important; }
+    #print-receipt, #print-receipt * { display: block !important; }
+    #print-receipt {
+        position: absolute; left: 0; top: 0;
+        width: 80mm; /* Standard thermal receipt width */
+        font-family: 'Inter', monospace;
+        color: #000;
+        background: #fff;
+        padding: 5px;
+        font-size: 12px;
+    }
+    .print-header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+    .print-header h2 { font-size: 16px; margin: 0; font-weight: bold; }
+    .print-header p { font-size: 10px; margin: 0; }
+    .print-meta { font-size: 10px; margin-bottom: 10px; }
+    .print-items { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .print-items th { border-bottom: 1px dashed #000; text-align: left; padding-bottom: 3px; }
+    .print-items td { padding: 3px 0; }
+    .print-total { font-weight: bold; font-size: 14px; border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; display: flex; justify-content: space-between; }
+    .print-footer { text-align: center; font-size: 10px; margin-top: 15px; }
+}

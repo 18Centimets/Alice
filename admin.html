@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Coffee | Quản Lý Thực Đơn</title>
+    <title>Chà Là Quán | Quản Lý Thực Đơn</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,6 +63,10 @@
             <a href="#" class="nav-item" data-page="users" id="nav-users">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Quản Lý Tài Khoản
+            </a>
+            <a href="#" class="nav-item" data-page="shifts" id="nav-shifts">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Chấm Công
             </a>
             <a href="index.html" class="nav-item" id="nav-storefront">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -559,6 +563,29 @@
                         <span style="font-size:2rem">📭</span>
                         <p>Chưa có phiếu xuất kho nào</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SHIFTS PAGE ===== -->
+        <section id="page-shifts" class="page">
+            <div class="glass-card" style="padding:1.5rem 2rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                    <h3 style="font-size:1.1rem">⏰ Bảng Chấm Công Ca Làm Việc</h3>
+                </div>
+                <div class="table-container">
+                    <table class="menu-table">
+                        <thead>
+                            <tr>
+                                <th>Nhân Viên</th>
+                                <th>Ngày</th>
+                                <th>Giờ Vào</th>
+                                <th>Giờ Ra</th>
+                                <th>Tổng Thời Gian</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shifts-table-body"></tbody>
+                    </table>
                 </div>
             </div>
         </section>

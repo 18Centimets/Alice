@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Coffee | Trải Nghiệm Cà Phê Thượng Hạng</title>
-    <meta name="description" content="Chào mừng bạn đến với Aura Coffee - Nơi thưởng thức những tách cà phê nghệ thuật trong không gian sang trọng.">
+    <title>Chà Là Quán | Trải Nghiệm Cà Phê Thượng Hạng</title>
+    <meta name="description" content="Chào mừng bạn đến với Chà Là Quán - Nơi thưởng thức những tách cà phê nghệ thuật trong không gian sang trọng.">
     <script>
         // Auth guard: redirect to login if no session
         (function(){
@@ -23,7 +23,7 @@
     <nav id="navbar">
         <div class="nav-container">
             <div class="logo">
-                <img src="assets/logo.png" alt="Aura Coffee Logo" id="nav-logo">
+                <img src="assets/logo.png" alt="Chà Là Quán Logo" id="nav-logo">
                 <span>AURA</span>
             </div>
             <ul class="nav-links">
@@ -33,6 +33,10 @@
                 <li><a href="admin.html" class="nav-admin">⚙️ Quản Lý</a></li>
             </ul>
             <div class="nav-right-actions">
+                <div id="shift-controls" style="display:flex; gap:10px; margin-right:15px;">
+                    <button id="btn-checkin" onclick="checkIn()" style="background:#2ecc71; color:#fff; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; display:none; font-family:'Inter', sans-serif;">⌚ Vào ca</button>
+                    <button id="btn-checkout" onclick="checkOut()" style="background:#e74c3c; color:#fff; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; display:none; font-family:'Inter', sans-serif;">⌚ Tan ca</button>
+                </div>
                 <div class="cart-icon" id="cart-toggle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                     <span id="cart-count">0</span>
@@ -47,7 +51,7 @@
     <!-- ===== HERO ===== -->
     <section id="hero">
         <div class="hero-overlay"></div>
-        <img src="assets/hero.png" alt="Aura Coffee Interior" class="hero-bg">
+        <img src="assets/hero.png" alt="Chà Là Quán Interior" class="hero-bg">
         <div class="hero-content">
             <h1 class="fade-in">Nghệ Thuật Trong Từng <br><span>Giọt Cà Phê</span></h1>
             <p class="fade-in-delay">Khám phá hương vị thượng hạng từ những hạt cà phê tuyển chọn nhất thế giới.</p>
@@ -340,6 +344,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     Thanh Toán
                 </button>
+                <button class="btn-panel-action merge" id="panel-merge-btn" onclick="openMergeTableModal()" style="background:var(--primary);color:#000;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+                    Gộp Bàn
+                </button>
                 <button class="btn-panel-action clear" id="panel-clear-btn" onclick="clearTable()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                     Dọn Bàn
@@ -357,6 +365,39 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Quản Lý
     </a>
+
+    <!-- Print Receipt Container (Hidden) -->
+    <div id="print-receipt" class="print-receipt" style="display:none;">
+        <div class="print-header">
+            <h2>CHÀ LÀ QUÁN</h2>
+            <p>HÓA ĐƠN THANH TOÁN</p>
+        </div>
+        <div class="print-meta" id="print-meta"></div>
+        <table class="print-items" style="width:100%; text-align:left; border-collapse:collapse; margin-top:10px;">
+            <thead><tr style="border-bottom:1px dashed #000;"><th>Món</th><th>SL</th><th style="text-align:right">TT</th></tr></thead>
+            <tbody id="print-items-body"></tbody>
+        </table>
+        <div class="print-total" style="margin-top:10px; border-top:1px dashed #000; padding-top:10px; font-weight:bold; display:flex; justify-content:space-between;">
+            <span>Tổng cộng:</span>
+            <span id="print-total-amount"></span>
+        </div>
+        <div class="print-footer" style="text-align:center; margin-top:20px; font-size:12px;">
+            <p>Cảm ơn quý khách & Hẹn gặp lại!</p>
+        </div>
+    </div>
+
+    <!-- Merge Table Modal -->
+    <div id="merge-modal" class="modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+        <div class="modal-content glass-card" style="margin:15% auto; padding:20px; width:400px; max-width:90%; position:relative;">
+            <span class="close" onclick="closeMergeModal()" style="position:absolute; right:20px; top:15px; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h3 style="margin-bottom:15px;">Gộp Bàn</h3>
+            <p style="margin-bottom:15px; color:var(--muted)">Chọn bàn để chuyển toàn bộ món từ bàn hiện tại sang:</p>
+            <div id="merge-table-list" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+                <!-- Tables will be injected here -->
+            </div>
+            <button class="btn-panel-action clear" onclick="closeMergeModal()" style="width:100%;">Hủy bỏ</button>
+        </div>
+    </div>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>

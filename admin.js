@@ -17,8 +17,8 @@ const SYSTEM_USERS = [
     { id:'user01',     password:'User@2024#',  role:'user',           name:'Nhân Viên Phục Vụ' }
 ];
 const ROLE_PAGES = {
-    administrator: ['menu-manager','add-item','revenue','inventory','inv-export','expenses','summary','logs','users'],
-    admin:         ['menu-manager','add-item','inventory','inv-export','expenses','summary','logs'],
+    administrator: ['menu-manager','add-item','revenue','inventory','inv-export','expenses','summary','logs','users','shifts'],
+    admin:         ['menu-manager','add-item','inventory','inv-export','expenses','summary','logs','shifts'],
     user:          ['expenses','revenue','inv-export']
 };
 // Pages that Administrator can grant/revoke for lower accounts
@@ -1102,4 +1102,42 @@ function toggleCustomPerm(userId, pageId) {
     writeLog('CẤP QUYỀN', 'Cập nhật quyền [' + pageId + '] cho tài khoản ' + userId);
     renderUsersPage();
     showToast('✅ Đã cập nhật quyền!');
+}
+
+// ==========================================
+//  SHIFTS (CHẤM CÔNG)
+// ==========================================
+function renderShifts() {
+    const tbody = document.getElementById('shifts-table-body');
+    if (!tbody) return;
+    
+    const shifts = (globalShifts || []).sort((a, b) => b.in - a.in);
+    
+    if (shifts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">Chưa có dữ liệu chấm công.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = shifts.map(s => {
+        const dIn = new Date(s.in);
+        const dOut = s.out ? new Date(s.out) : null;
+        
+        let totalStr = '—';
+        if (dOut) {
+            const diffMs = dOut - dIn;
+            const hrs = Math.floor(diffMs / 3600000);
+            const mins = Math.floor((diffMs % 3600000) / 60000);
+            totalStr = `${hrs}h ${mins}m`;
+        } else {
+            totalStr = '<span style="color:#2ecc71">Đang làm việc</span>';
+        }
+        
+        return `<tr>
+            <td><strong>${s.userName}</strong></td>
+            <td>${s.date}</td>
+            <td>${dIn.toLocaleTimeString('vi-VN')}</td>
+            <td>${dOut ? dOut.toLocaleTimeString('vi-VN') : '—'}</td>
+            <td style="font-weight:bold">${totalStr}</td>
+        </tr>`;
+    }).join('');
 }

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 //  AURA COFFEE - Main App Logic
 // ============================================================
 
@@ -237,6 +237,13 @@ function markPaid() {
     updateTableBtn(activeTableKey);
     openTablePanel(activeTableKey, activeTableKey.split('-')[1], activeTableKey.split('-')[0]);
     showToast('💜 Đã thanh toán!');
+    
+    const table = tableData[activeTableKey];
+    printReceipt({
+        items: table.items,
+        total: table.items.reduce((sum, item) => sum + (item.price * item.qty), 0),
+        table: 'Bàn ' + activeTableKey
+    });
 }
 function clearTable() {
     if (!activeTableKey) return;
@@ -527,7 +534,7 @@ function confirmOrder() {
     }
 
     // ---- Save Revenue Record ----
-    saveRevenueRecord({
+    const recordToPrint = {
         total,
         paymentMethod: selectedPaymentMethod,
         orderType: selectedOrderType,
@@ -539,12 +546,19 @@ function confirmOrder() {
         year: String(now.getFullYear()),
         time: now.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }),
         timestamp: now.getTime()
-    });
+    };
+    saveRevenueRecord(recordToPrint);
 
     cart = [];
     updateCartUI();
     closeCheckoutModal();
     updateZoneCounts();
+    
+    printReceipt({
+        items: recordToPrint.items,
+        total: recordToPrint.total,
+        table: recordToPrint.tableKey === 'takeaway' ? 'Mang đi' : 'Bàn ' + recordToPrint.tableKey
+    });
 }
 function saveRevenueRecord(record) {
     const all = globalRevenue || [];
@@ -562,4 +576,135 @@ function showToast(msg) {
     el.className   = 'order-toast success show';
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============================================================
+//  MERGE TABLE & PRINT RECEIPT
+// ============================================================
+function openMergeTableModal() {
+    if (!activeTableKey || !tableData[activeTableKey] || !tableData[activeTableKey].items.length) {
+        showToast('Bàn đang trống, không thể gộp!');
+        return;
+    }
+    const modal = document.getElementById('merge-modal');
+    const list = document.getElementById('merge-table-list');
+    list.innerHTML = '';
+    
+    let hasOthers = false;
+    Object.keys(tableData).forEach(key => {
+        if (key !== activeTableKey && tableData[key].items && tableData[key].items.length > 0) {
+            hasOthers = true;
+            list.innerHTML += `<button class="btn-panel-action" style="background:#2ecc71;color:#fff;border:none;padding:15px;cursor:pointer;border-radius:10px;" onclick="mergeTable('${key}')">Bàn ${key}</button>`;
+        }
+    });
+    if (!hasOthers) {
+        list.innerHTML = '<p style="grid-column:1/-1;color:#aaa;text-align:center;">Không có bàn nào khác đang có khách để gộp.</p>';
+    }
+    modal.style.display = 'block';
+}
+
+function closeMergeModal() {
+    const modal = document.getElementById('merge-modal');
+    if(modal) modal.style.display = 'none';
+}
+
+function mergeTable(targetKey) {
+    const sourceTable = tableData[activeTableKey];
+    const targetTable = tableData[targetKey];
+    
+    // Add items
+    targetTable.items = [...targetTable.items, ...sourceTable.items];
+    targetTable.isPaid = false; 
+    
+    // Clear source
+    tableData[activeTableKey] = makeEmptyTable();
+    
+    saveTables();
+    updateTableBtn(activeTableKey);
+    updateTableBtn(targetKey);
+    closeMergeModal();
+    closeTablePanel();
+    showToast(`✅ Đã gộp thành công vào Bàn ${targetKey}!`);
+}
+
+function printReceipt(data) {
+    const d = new Date();
+    const currentUser = JSON.parse(sessionStorage.getItem('aura_session') || '{}');
+    document.getElementById('print-meta').innerHTML = `
+        <p>Bàn/Loại: <b>${data.table}</b></p>
+        <p>TG: ${d.toLocaleString('vi-VN')}</p>
+        <p>Thu ngân: ${currentUser.name || 'Nhân viên'}</p>
+    `;
+    document.getElementById('print-items-body').innerHTML = data.items.map(i => `
+        <tr>
+            <td>${i.title} ${i.size && i.size !== 'M' ? '('+i.size+')' : ''}</td>
+            <td>${i.qty}</td>
+            <td style="text-align:right">${(i.price * i.qty).toLocaleString('vi-VN')}</td>
+        </tr>
+    `).join('');
+    document.getElementById('print-total-amount').innerText = data.total.toLocaleString('vi-VN') + 'đ';
+    window.print();
+}
+
+// ============================================================
+//  SHIFT MANAGEMENT (CHẤM CÔNG)
+// ============================================================
+function getShiftId() {
+    const user = JSON.parse(sessionStorage.getItem('aura_session'));
+    if (!user) return null;
+    const dateStr = new Date().toISOString().slice(0,10);
+    return user.id + '_' + dateStr;
+}
+
+function updateShiftUI() {
+    const btnIn = document.getElementById('btn-checkin');
+    const btnOut = document.getElementById('btn-checkout');
+    if (!btnIn || !btnOut) return;
+    
+    const sid = getShiftId();
+    if (!sid) return;
+    
+    const shifts = globalShifts || [];
+    // Tìm ca làm việc của user hôm nay, lấy ca gần nhất chưa checkout, hoặc nếu đã checkout hết thì cho phép check-in lại (ca mới)
+    const activeShift = shifts.find(s => s.userId === sid.split('_')[0] && s.date === sid.split('_')[1] && !s.out);
+    
+    if (activeShift) {
+        btnIn.style.display = 'none';
+        btnOut.style.display = 'block';
+    } else {
+        btnIn.style.display = 'block';
+        btnOut.style.display = 'none';
+    }
+}
+
+function checkIn() {
+    const user = JSON.parse(sessionStorage.getItem('aura_session'));
+    if (!user) return;
+    const shifts = globalShifts || [];
+    
+    shifts.push({
+        id: 'shift_' + Date.now(),
+        userId: user.id,
+        userName: user.name,
+        date: new Date().toISOString().slice(0,10),
+        in: new Date().getTime(),
+        out: null
+    });
+    
+    db.ref('shifts').set(shifts);
+    showToast('✅ Đã bắt đầu ca làm việc!');
+}
+
+function checkOut() {
+    const user = JSON.parse(sessionStorage.getItem('aura_session'));
+    if (!user) return;
+    const shifts = globalShifts || [];
+    const dateStr = new Date().toISOString().slice(0,10);
+    
+    const activeShift = shifts.find(s => s.userId === user.id && s.date === dateStr && !s.out);
+    if (activeShift) {
+        activeShift.out = new Date().getTime();
+        db.ref('shifts').set(shifts);
+        showToast('✅ Đã kết thúc ca làm việc!');
+    }
 }

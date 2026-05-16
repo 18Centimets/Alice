@@ -117,3 +117,9 @@ db.ref('tables').on('value', snap => {
         renderMap();
     }
 });
+// SHIFTS LISTENER
+db.ref('shifts').on('value', snap => {
+    globalShifts = snap.val() || [];
+    if (typeof updateShiftUI === 'function') updateShiftUI();
+    if (typeof renderShifts === 'function') renderShifts();
+});
