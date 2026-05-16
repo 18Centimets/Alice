@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Coffee | Trải Nghiệm Cà Phê Thượng Hạng</title>
+    <meta name="description" content="Chào mừng bạn đến với Aura Coffee - Nơi thưởng thức những tách cà phê nghệ thuật trong không gian sang trọng.">
+    <script>
+        // Auth guard: redirect to login if no session
+        (function(){
+            var s = sessionStorage.getItem('aura_session');
+            if (!s) { window.location.href = 'login.html'; }
+        })();
+    </script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="assets/logo.png" alt="Aura Coffee Logo" id="nav-logo">
+                <span>AURA</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#hero">Trang Chủ</a></li>
+                <li><a href="#floor-map">Sơ Đồ Bàn</a></li>
+                <li><a href="#menu">Thực Đơn</a></li>
+                <li><a href="admin.html" class="nav-admin">⚙️ Quản Lý</a></li>
+            </ul>
+            <div class="nav-right-actions">
+                <div class="cart-icon" id="cart-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span id="cart-count">0</span>
+                </div>
+                <button class="nav-logout-btn" onclick="navLogout()" title="Đăng xuất">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section id="hero">
+        <div class="hero-overlay"></div>
+        <img src="assets/hero.png" alt="Aura Coffee Interior" class="hero-bg">
+        <div class="hero-content">
+            <h1 class="fade-in">Nghệ Thuật Trong Từng <br><span>Giọt Cà Phê</span></h1>
+            <p class="fade-in-delay">Khám phá hương vị thượng hạng từ những hạt cà phê tuyển chọn nhất thế giới.</p>
+            <div class="hero-cta fade-in-delay-2">
+                <a href="#menu" class="btn btn-primary">Đặt Món Ngay</a>
+                <a href="#floor-map" class="btn btn-outline">Xem Sơ Đồ Bàn</a>
+            </div>
+        </div>
+    </section>
+
+    <main>
+
+        <!-- ===== FLOOR MAP ===== -->
+        <section id="floor-map">
+            <div class="section-header">
+                <h2>Sơ Đồ Bàn</h2>
+                <p class="section-sub">Bấm vào bàn để xem chi tiết đơn hàng</p>
+                <div class="map-legend">
+                    <span class="legend-item"><span class="legend-dot available"></span> Trống</span>
+                    <span class="legend-item"><span class="legend-dot occupied"></span> Đang dùng</span>
+                    <span class="legend-item"><span class="legend-dot paid"></span> Đã thanh toán</span>
+                </div>
+            </div>
+
+            <div class="floor-map-container">
+                <!-- INDOOR -->
+                <div class="floor-zone indoor-zone">
+                    <div class="zone-header">
+                        <div class="zone-icon">🏠</div>
+                        <div>
+                            <h3>Trong Quán</h3>
+                            <span class="zone-sub">10 bàn · Có điều hòa</span>
+                        </div>
+                        <div class="zone-count" id="indoor-avail">10 trống</div>
+                    </div>
+                    <div class="store-svg-wrap indoor-map">
+                        <div class="store-outline">
+                            <div class="store-label">CỬA VÀO ↓</div>
+                            <div class="store-door"></div>
+                            <div class="tables-grid" id="indoor-tables">
+                                <!-- Injected by JS -->
+                            </div>
+                            <div class="counter-bar">
+                                <span>☕ QUẦY BAR</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OUTDOOR -->
+                <div class="floor-zone outdoor-zone">
+                    <div class="zone-header">
+                        <div class="zone-icon">🌿</div>
+                        <div>
+                            <h3>Ngoài Quán</h3>
+                            <span class="zone-sub">10 bàn · Không gian mở</span>
+                        </div>
+                        <div class="zone-count" id="outdoor-avail">10 trống</div>
+                    </div>
+                    <div class="store-svg-wrap outdoor-map">
+                        <div class="outdoor-outline">
+                            <div class="outdoor-decor">🌳 &nbsp; 🌳</div>
+                            <div class="tables-grid outdoor-grid" id="outdoor-tables">
+                                <!-- Injected by JS -->
+                            </div>
+                            <div class="outdoor-decor bottom-decor">🌿 &nbsp; 🌿</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== MENU ===== -->
+        <section id="menu">
+            <div class="section-header">
+                <h2>Thực Đơn Đặc Sắc</h2>
+                <div class="category-filters">
+                    <button class="filter-btn active" data-category="all">Tất Cả</button>
+                    <button class="filter-btn" data-category="coffee">☕ Cà Phê</button>
+                    <button class="filter-btn" data-category="tea">🍵 Trà</button>
+                    <button class="filter-btn" data-category="pastry">🥐 Bánh Ngọt</button>
+                    <button class="filter-btn" data-category="smoothie">🥤 Sinh Tố</button>
+                    <button class="filter-btn" data-category="juice">🧃 Nước Ép</button>
+                </div>
+            </div>
+            <div id="menu-grid" class="menu-grid"></div>
+        </section>
+
+    </main>
+
+    <!-- ===== PRODUCT MODAL ===== -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content glass">
+            <span class="close-modal" id="close-product-modal">&times;</span>
+            <div class="modal-body">
+                <div class="product-image-large">
+                    <img id="modal-img" src="" alt="">
+                </div>
+                <div class="product-info">
+                    <h2 id="modal-title">Tên Món</h2>
+                    <p id="modal-desc" class="modal-desc-text"></p>
+                    <div class="customization">
+                        <!-- Size -->
+                        <div class="option-group">
+                            <label>Kích cỡ</label>
+                            <div class="options" id="size-options">
+                                <button class="opt-btn" data-val="S">S · Nhỏ</button>
+                                <button class="opt-btn active" data-val="M">M · Vừa</button>
+                                <button class="opt-btn" data-val="L">L · Lớn</button>
+                            </div>
+                        </div>
+                        <!-- Sugar -->
+                        <div class="option-group">
+                            <label>Đường</label>
+                            <div class="options">
+                                <button class="opt-btn" data-val="0">0%</button>
+                                <button class="opt-btn" data-val="50">50%</button>
+                                <button class="opt-btn active" data-val="100">100%</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quantity Control -->
+                    <div class="quantity-row">
+                        <label>Số lượng</label>
+                        <div class="qty-control">
+                            <button class="qty-btn" id="qty-minus">−</button>
+                            <span id="qty-display">1</span>
+                            <button class="qty-btn" id="qty-plus">+</button>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <div class="price-breakdown">
+                            <span class="price-unit" id="modal-unit-price">0đ / ly</span>
+                            <span class="price" id="modal-price">0đ</span>
+                        </div>
+                        <button id="add-to-cart-btn" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            Thêm Vào Giỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CART SIDEBAR ===== -->
+    <div id="cart-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>🛒 Giỏ Hàng</h3>
+            <button id="close-cart">&times;</button>
+        </div>
+        <div id="cart-items" class="cart-items">
+            <p class="cart-empty-msg">Giỏ hàng trống</p>
+        </div>
+        <div class="sidebar-footer">
+            <div class="total">
+                <span>Tổng cộng:</span>
+                <span id="cart-total">0đ</span>
+            </div>
+            <button class="btn btn-primary btn-block" id="checkout-btn">
+                Tiến Hành Đặt Món
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== CHECKOUT MODAL (Mang về / Tại chỗ) ===== -->
+    <div id="checkout-modal" class="modal">
+        <div class="checkout-modal-content glass">
+            <span class="close-modal" id="close-checkout-modal">&times;</span>
+            <h2 class="checkout-title">Hoàn Tất Đặt Món</h2>
+            <p class="checkout-sub">Chọn hình thức sử dụng</p>
+
+            <!-- Order Type Selection -->
+            <div class="order-type-grid" id="order-type-section">
+                <div class="order-type-card" id="type-dine-in" onclick="selectOrderType('dine-in')">
+                    <div class="order-type-icon">🪑</div>
+                    <h3>Tại Chỗ</h3>
+                    <p>Thưởng thức tại quán</p>
+                </div>
+                <div class="order-type-card" id="type-takeaway" onclick="selectOrderType('takeaway')">
+                    <div class="order-type-icon">🛍️</div>
+                    <h3>Mang Về</h3>
+                    <p>Đóng gói mang đi</p>
+                </div>
+            </div>
+
+            <!-- Dine-in: Table Selection -->
+            <div id="table-selection-section" style="display:none;">
+                <div class="table-sel-header">
+                    <button class="back-btn" onclick="resetOrderType()">← Quay lại</button>
+                    <h3>Chọn Vị Trí Bàn</h3>
+                </div>
+                <div class="table-sel-zones">
+                    <div class="table-sel-zone">
+                        <h4>🏠 Trong Quán</h4>
+                        <div class="table-sel-grid" id="indoor-sel-grid"></div>
+                    </div>
+                    <div class="table-sel-zone">
+                        <h4>🌿 Ngoài Quán</h4>
+                        <div class="table-sel-grid" id="outdoor-sel-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div id="order-summary-section" style="display:none;">
+                <div class="table-sel-header">
+                    <button class="back-btn" id="back-to-table-btn">← Đổi bàn</button>
+                    <h3 id="order-summary-title">Xác Nhận Đơn Hàng</h3>
+                </div>
+                <div class="order-summary-body">
+                    <div class="selected-table-badge" id="selected-table-badge"></div>
+                    <div id="order-summary-items" class="order-sum-list"></div>
+                    <div class="order-sum-total">
+                        <span>Tổng cộng:</span>
+                        <span id="order-final-total" class="sum-total-price"></span>
+                    </div>
+                </div>
+                <div class="checkout-note">
+                    <input type="text" id="order-note" placeholder="Ghi chú thêm (tuỳ chọn)...">
+                </div>
+                <!-- ===== PAYMENT METHOD ===== -->
+                <div class="payment-method-section">
+                    <p class="payment-method-label">💳 Hình thức thanh toán</p>
+                    <div class="payment-method-grid">
+                        <div class="payment-card selected" id="pay-cash" onclick="selectPaymentMethod('cash')">
+                            <span class="pay-icon">💵</span>
+                            <span class="pay-name">Tiền Mặt</span>
+                        </div>
+                        <div class="payment-card" id="pay-online" onclick="selectPaymentMethod('online')">
+                            <span class="pay-icon">📱</span>
+                            <span class="pay-name">Chuyển Khoản</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block" id="confirm-order-btn">
+                    ✅ Xác Nhận Đặt Món
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TABLE DETAIL PANEL ===== -->
+    <div id="table-detail-panel" class="table-panel">
+        <div class="table-panel-header">
+            <div class="panel-title-group">
+                <h3 id="panel-table-name">Bàn 1</h3>
+                <span id="panel-status-badge" class="status-badge"></span>
+            </div>
+            <button id="close-table-panel">&times;</button>
+        </div>
+
+        <div id="panel-empty" class="panel-empty">
+            <span>✅</span>
+            <p>Bàn đang trống</p>
+            <button class="btn btn-primary btn-sm" onclick="closeTablePanel(); document.getElementById('menu').scrollIntoView({behavior:'smooth'})">Đặt Món Cho Bàn Này</button>
+        </div>
+
+        <div id="panel-occupied" style="display:none;">
+            <div class="panel-section">
+                <h4>Danh Sách Món</h4>
+                <div id="panel-order-list" class="panel-order-list"></div>
+            </div>
+            <div class="panel-meta">
+                <div class="panel-meta-row">
+                    <span>Thời gian vào:</span>
+                    <span id="panel-time"></span>
+                </div>
+                <div class="panel-meta-row">
+                    <span>Tổng tiền:</span>
+                    <span id="panel-total" class="panel-total-price"></span>
+                </div>
+                <div class="panel-meta-row">
+                    <span>Trạng thái món:</span>
+                    <span id="panel-served-status"></span>
+                </div>
+                <div class="panel-meta-row">
+                    <span>Thanh toán:</span>
+                    <span id="panel-paid-status"></span>
+                </div>
+            </div>
+            <div class="panel-actions">
+                <button class="btn-panel-action serve" id="panel-serve-btn" onclick="markServed()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Ra Món
+                </button>
+                <button class="btn-panel-action pay" id="panel-pay-btn" onclick="markPaid()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Thanh Toán
+                </button>
+                <button class="btn-panel-action clear" id="panel-clear-btn" onclick="clearTable()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    Dọn Bàn
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="panel-backdrop" class="panel-backdrop"></div>
+
+    <!-- ===== SUCCESS TOAST ===== -->
+    <div id="order-toast" class="order-toast"></div>
+
+    <!-- ===== FLOATING ADMIN ===== -->
+    <a href="admin.html" id="admin-fab" title="Mở trang quản lý thực đơn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Quản Lý
+    </a>
+
+    <script src="app.js"></script>
+</body>
+</html>

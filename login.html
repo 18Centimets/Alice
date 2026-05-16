@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Coffee | Đăng Nhập</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary:#D4AF37; --bg:#0A0A0A; --card:#111; --border:rgba(255,255,255,.08); --muted:#888; --danger:#e74c3c; }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;overflow:hidden;}
+        .bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;}
+        .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.18;}
+        .orb1{width:500px;height:500px;background:var(--primary);top:-100px;left:-100px;}
+        .orb2{width:400px;height:400px;background:#8B5CF6;bottom:-80px;right:-80px;}
+        .login-wrapper{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;width:900px;max-width:95vw;border-radius:24px;overflow:hidden;border:1px solid var(--border);box-shadow:0 40px 80px rgba(0,0,0,.6);}
+        .login-brand{background:linear-gradient(135deg,#0f0f0f 0%,#1a1400 100%);padding:3.5rem;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid var(--border);}
+        .brand-logo{display:flex;align-items:center;gap:.8rem;margin-bottom:auto;}
+        .brand-logo-text{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--primary);letter-spacing:3px;}
+        .brand-sub{font-size:.7rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:.2rem;}
+        .brand-tagline{margin-top:auto;}
+        .brand-tagline h1{font-family:'Playfair Display',serif;font-size:2.2rem;line-height:1.2;color:#f0f0f0;margin-bottom:.8rem;}
+        .brand-tagline h1 span{color:var(--primary);}
+        .brand-tagline p{color:var(--muted);font-size:.88rem;line-height:1.7;}
+        .role-chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.5rem;}
+        .chip{padding:.3rem .8rem;border-radius:20px;font-size:.72rem;font-weight:600;border:1px solid;}
+        .chip-a{color:#D4AF37;border-color:rgba(212,175,55,.3);background:rgba(212,175,55,.08);}
+        .chip-b{color:#9b59b6;border-color:rgba(155,89,182,.3);background:rgba(155,89,182,.08);}
+        .chip-c{color:#3498db;border-color:rgba(52,152,219,.3);background:rgba(52,152,219,.08);}
+        .login-form-side{background:var(--card);padding:3.5rem;}
+        .form-header{margin-bottom:2rem;}
+        .form-header h2{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:.4rem;}
+        .form-header p{color:var(--muted);font-size:.88rem;}
+        .form-group{margin-bottom:1.4rem;}
+        .form-group label{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:.5rem;}
+        .form-group input{width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;color:#f0f0f0;font-size:.95rem;outline:none;transition:all .3s;font-family:'Inter',sans-serif;}
+        .form-group input:focus{border-color:rgba(212,175,55,.5);box-shadow:0 0 0 3px rgba(212,175,55,.08);}
+        .btn-login{width:100%;background:var(--primary);color:#0a0a0a;border:none;padding:.95rem;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;transition:all .3s;font-family:'Inter',sans-serif;margin-top:.5rem;}
+        .btn-login:hover{background:#B8860B;transform:translateY(-2px);box-shadow:0 10px 25px rgba(212,175,55,.3);}
+        .error-msg{display:none;background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--danger);padding:.7rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:1rem;text-align:center;}
+        .hint-box{margin-top:1.5rem;padding:1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;}
+        .hint-box p{font-size:.75rem;color:var(--muted);margin-bottom:.4rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+        .hint-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.2rem 0;border-bottom:1px solid rgba(255,255,255,.04);}
+        .hint-row:last-child{border:none;}
+        .hint-row span:first-child{color:#aaa;}
+        .hint-row span:last-child{color:var(--primary);font-family:monospace;}
+        @media(max-width:640px){.login-wrapper{grid-template-columns:1fr;}.login-brand{display:none;}}
+    </style>
+</head>
+<body>
+<div class="bg-orbs"><div class="orb orb1"></div><div class="orb orb2"></div></div>
+<div class="login-wrapper">
+    <div class="login-brand">
+        <div class="brand-logo">
+            <div>
+                <div class="brand-logo-text">AURA</div>
+                <div class="brand-sub">Coffee Management</div>
+            </div>
+        </div>
+        <div class="brand-tagline">
+            <h1>Quản Lý Thông Minh, <span>Hiệu Quả Tối Ưu</span></h1>
+            <p>Hệ thống quản lý quán cà phê tích hợp: thực đơn, đơn hàng, doanh thu và vật tư tồn kho.</p>
+            <div class="role-chips">
+                <span class="chip chip-a">👑 Administrator</span>
+                <span class="chip chip-b">🛡️ Admin</span>
+                <span class="chip chip-c">👤 User</span>
+            </div>
+        </div>
+    </div>
+    <div class="login-form-side">
+        <div class="form-header">
+            <h2>Đăng Nhập</h2>
+            <p>Nhập thông tin tài khoản của bạn để tiếp tục</p>
+        </div>
+        <div class="error-msg" id="error-msg">❌ Tên đăng nhập hoặc mật khẩu không đúng</div>
+        <div class="form-group">
+            <label>Tên Đăng Nhập</label>
+            <input type="text" id="login-user" placeholder="Nhập username..." autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label>Mật Khẩu</label>
+            <input type="password" id="login-pass" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+        </div>
+        <button class="btn-login" id="login-btn" onclick="doLogin()">Đăng Nhập →</button>
+        <div class="hint-box" style="display:none;">
+            <p>Tài khoản mặc định</p>
+            <div class="hint-row"><span>👑 superadmin</span><span>Aura@2024#</span></div>
+            <div class="hint-row"><span>🛡️ admin</span><span>Admin@2024#</span></div>
+            <div class="hint-row"><span>👤 user01</span><span>User@2024#</span></div>
+        </div>
+    </div>
+</div>
+<script>
+const SYSTEM_USERS = [
+    { id:'superadmin', password:'Aura@2024#',  role:'administrator', name:'Super Administrator' },
+    { id:'admin',      password:'Admin@2024#', role:'admin',          name:'Quản Lý Quán' },
+    { id:'user01',     password:'User@2024#',  role:'user',           name:'Nhân Viên Phục Vụ' }
+];
+// If already logged in, redirect
+const s = sessionStorage.getItem('aura_session');
+if (s) {
+    const sess = JSON.parse(s);
+    window.location.href = sess.role === 'user' ? 'index.html' : 'admin.html';
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+function doLogin() {
+    const uid  = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const user = SYSTEM_USERS.find(u => u.id === uid && u.password === pass);
+    const errEl = document.getElementById('error-msg');
+    if (!user) { errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+    sessionStorage.setItem('aura_session', JSON.stringify({ ...user, loginTime: new Date().toISOString() }));
+    // Write log
+    const logs = JSON.parse(localStorage.getItem('aura_coffee_logs') || '[]');
+    logs.unshift({ id: Date.now(), userId: user.id, userName: user.name, role: user.role,
+        action: 'ĐĂNG NHẬP', detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+        datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
+    localStorage.setItem('aura_coffee_logs', JSON.stringify(logs.slice(0, 500)));
+    window.location.href = user.role === 'user' ? 'admin.html' : 'admin.html';
+}
+</script>
+</body>
+</html>
