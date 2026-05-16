@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 //  AURA COFFEE - Admin Panel Logic
 // ==========================================
 
@@ -1039,7 +1039,7 @@ function renderLogs() {
             '<td><strong>' + l.userName + '</strong><br><small style="color:var(--text-muted)">' + l.userId + '</small></td>' +
             '<td><span class="log-role-badge ' + (roleCls[l.role]||'') + '">' + (ROLE_LABELS[l.role]||l.role) + '</span></td>' +
             '<td><span class="log-action-badge">' + l.action + '</span></td>' +
-            '<td style="color:var(--text-muted);font-size:.85rem">' + l.detail + '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\\'' + u.id + '\\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
+            '<td style="color:var(--text-muted);font-size:.85rem">' + l.detail + '</td></tr>';
     }).join('');
 }
 function clearLogs() {
