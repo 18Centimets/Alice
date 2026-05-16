@@ -91,6 +91,10 @@
         </div>
     </div>
 </div>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase-config.js"></script>
 <script>
 const SYSTEM_USERS = [
     { id:'superadmin', password:'Aura@2024#',  role:'administrator', name:'Super Administrator' },
@@ -105,7 +109,7 @@ if (s) {
 }
 document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
-function doLogin() {
+async function doLogin() {
     const uid  = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
     const user = SYSTEM_USERS.find(u => u.id === uid && u.password === pass);
@@ -113,12 +117,17 @@ function doLogin() {
     if (!user) { errEl.style.display='block'; return; }
     errEl.style.display = 'none';
     sessionStorage.setItem('aura_session', JSON.stringify({ ...user, loginTime: new Date().toISOString() }));
+    
+    document.getElementById('login-btn').innerText = 'Đang đồng bộ...';
+    await migrateLocalData(); // Wait for data to be migrated if first time
+
     // Write log
-    const logs = JSON.parse(localStorage.getItem('aura_coffee_logs') || '[]');
+    const logs = globalLogs || [];
     logs.unshift({ id: Date.now(), userId: user.id, userName: user.name, role: user.role,
         action: 'ĐĂNG NHẬP', detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
         datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
-    localStorage.setItem('aura_coffee_logs', JSON.stringify(logs.slice(0, 500)));
+    db.ref('logs').set(logs.slice(0, 500));
+    
     window.location.href = user.role === 'user' ? 'admin.html' : 'admin.html';
 }
 </script>

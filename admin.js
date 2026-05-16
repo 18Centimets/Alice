@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 //  AURA COFFEE - Admin Panel Logic
 // ==========================================
 
@@ -91,9 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 function loadMenuData() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-        allItems = JSON.parse(stored);
+    const stored = globalMenu;
+    if (stored && stored.length > 0) {
+        allItems = stored;
     } else {
         allItems = defaultMenu.map(item => ({ ...item }));
         saveMenuData();
@@ -101,7 +101,7 @@ function loadMenuData() {
 }
 
 function saveMenuData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allItems));
+    db.ref("menu").set(allItems);
 }
 
 function getNextId() {
@@ -545,7 +545,7 @@ function setRevPeriod(period) {
 }
 
 function renderRevenuePage() {
-    const all  = JSON.parse(localStorage.getItem(REVENUE_KEY) || '[]');
+    const all = globalRevenue || [];
     const key  = document.getElementById('rev-date-input').value || '';
     const filtered = all.filter(r => {
         if (revPeriod === 'day')   return r.date  === key;
@@ -609,8 +609,8 @@ function renderRevenuePage() {
 // ==========================================
 let expImageDataURL = '';
 
-function loadInventory() { return JSON.parse(localStorage.getItem(INVENTORY_KEY) || '[]'); }
-function saveInventoryData(d) { localStorage.setItem(INVENTORY_KEY, JSON.stringify(d)); }
+function loadInventory() { return globalInventory || []; }
+function saveInventoryData(d) { db.ref("inventory").set(d); }
 
 function addInventoryItem() {
     const name = document.getElementById('inv-name').value.trim();
@@ -632,15 +632,15 @@ function addInventoryItem() {
 function deleteInventoryItemByName(name) {
     if(!confirm(`Xóa toàn bộ dữ liệu của vật tư "${name}"?`)) return;
     saveInventoryData(loadInventory().filter(i => i.name.trim() !== name));
-    var exports = JSON.parse(localStorage.getItem(INVENTORY_EXPORT_KEY) || '[]');
-    localStorage.setItem(INVENTORY_EXPORT_KEY, JSON.stringify(exports.filter(e => e.name.trim() !== name)));
+    var exports = (globalInventoryExport || []);
+    db.ref("inventory_export").set(exports.filter(e => e.name.trim() !== name));
     writeLog('XÓA VẬT TƯ', `Đã xóa vật tư: ${name}`);
     renderInventoryTable();
 }
 
 function getAggregatedInventory() {
     const imports = loadInventory();
-    const exports = JSON.parse(localStorage.getItem(INVENTORY_EXPORT_KEY) || '[]');
+    const exports = (globalInventoryExport || []);
     const aggMap = {};
     imports.forEach(i => {
         const name = i.name.trim();
@@ -751,14 +751,14 @@ function addInventoryExport() {
         return;
     }
 
-    const exports = JSON.parse(localStorage.getItem(INVENTORY_EXPORT_KEY) || '[]');
+    const exports = (globalInventoryExport || []);
     exports.push({
         id: Date.now(),
         name, qty, date, note,
         user: currentUser ? currentUser.name : 'Unknown',
         timestamp: Date.now()
     });
-    localStorage.setItem(INVENTORY_EXPORT_KEY, JSON.stringify(exports));
+    db.ref("inventory_export").set(exports);
     writeLog('XUẤT KHO', `Đã xuất ${qty} ${name}. Ghi chú: ${note}`);
     
     document.getElementById('inv-export-qty').value = '';
@@ -770,7 +770,7 @@ function addInventoryExport() {
 }
 
 function renderInventoryExportTable() {
-    const exports = JSON.parse(localStorage.getItem(INVENTORY_EXPORT_KEY) || '[]').sort((a,b) => b.timestamp - a.timestamp);
+    const exports = (globalInventoryExport || []).sort((a,b) => b.timestamp - a.timestamp);
     const tbody = document.getElementById('inv-export-table-body');
     const table = document.getElementById('inv-export-table');
     const empty = document.getElementById('inv-export-empty');
@@ -796,8 +796,8 @@ function renderInventoryExportTable() {
 // ==========================================
 //  EXPENSES (Chi vận hành)
 // ==========================================
-function loadExpenses() { return JSON.parse(localStorage.getItem(EXPENSE_KEY) || '[]'); }
-function saveExpensesData(d) { localStorage.setItem(EXPENSE_KEY, JSON.stringify(d)); }
+function loadExpenses() { return globalExpenses || []; }
+function saveExpensesData(d) { db.ref("expenses").set(d); }
 
 function saveExpense() {
     const name   = document.getElementById('exp-name').value.trim();
@@ -954,7 +954,7 @@ function checkAuth() {
 }
 function getEffectivePages(userId, role) {
     var base = (ROLE_PAGES[role] || []).slice();
-    var custom = JSON.parse(localStorage.getItem(CUSTOM_PERMS_KEY) || '{}');
+    var custom = globalPermissions || {};
     var extras = custom[userId] || [];
     extras.forEach(function(p) { if (base.indexOf(p) === -1) base.push(p); });
     return base;
@@ -1004,7 +1004,7 @@ function doLogout() {
 // ==========================================
 function writeLog(action, detail) {
     if (!currentUser) return;
-    var logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    var logs = globalLogs || [];
     logs.unshift({
         id: Date.now(), userId: currentUser.id, userName: currentUser.name,
         role: currentUser.role, action: action, detail: detail,
@@ -1012,7 +1012,7 @@ function writeLog(action, detail) {
         date: new Date().toISOString().slice(0,10),
         timestamp: Date.now()
     });
-    localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 1000)));
+    db.ref("logs").set(logs.slice(0, 1000));
 }
 function renderLogs() {
     var logs     = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
@@ -1043,7 +1043,7 @@ function renderLogs() {
 }
 function clearLogs() {
     if (!confirm('Xoa toan bo nhat ky? Khong the hoan tac.')) return;
-    localStorage.removeItem(LOG_KEY);
+    db.ref("logs").set([]);
     renderLogs();
     showToast('Da xoa nhat ky!');
 }
@@ -1093,12 +1093,12 @@ function renderUsersPage() {
 }
 
 function toggleCustomPerm(userId, pageId) {
-    var custom = JSON.parse(localStorage.getItem(CUSTOM_PERMS_KEY) || '{}');
+    var custom = globalPermissions || {};
     if (!custom[userId]) custom[userId] = [];
     var idx = custom[userId].indexOf(pageId);
     if (idx !== -1) custom[userId].splice(idx, 1);
     else custom[userId].push(pageId);
-    localStorage.setItem(CUSTOM_PERMS_KEY, JSON.stringify(custom));
+    db.ref("permissions").set(custom);
     writeLog('CẤP QUYỀN', 'Cập nhật quyền [' + pageId + '] cho tài khoản ' + userId);
     renderUsersPage();
     showToast('✅ Đã cập nhật quyền!');

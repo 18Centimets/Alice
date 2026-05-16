@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 //  AURA COFFEE - Main App Logic
 // ============================================================
 
@@ -16,7 +16,7 @@ function navLogout() {
         logs.unshift({ id: Date.now(), userId: sess.id, userName: sess.name, role: sess.role,
             action: 'ĐĂNG XUẤT', detail: 'Đăng xuất từ trang POS lúc ' + new Date().toLocaleTimeString('vi-VN'),
             datetime: new Date().toLocaleString('vi-VN'), date: new Date().toISOString().slice(0,10), timestamp: Date.now() });
-        localStorage.setItem('aura_coffee_logs', JSON.stringify(logs.slice(0, 1000)));
+        db.ref("logs").set(logs.slice(0, 1000));
     }
     sessionStorage.removeItem(SESSION_KEY);
     window.location.href = 'login.html';
@@ -92,7 +92,7 @@ function loadMenu() {
     const storedVersion = localStorage.getItem(STORAGE_KEY + '_version');
     if (storedVersion !== DB_VERSION) {
         // New version — seed fresh data
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultMenuData));
+        db.ref("menu").set(defaultMenuData);
         localStorage.setItem(STORAGE_KEY + '_version', DB_VERSION);
         return defaultMenuData;
     }
@@ -108,7 +108,7 @@ function loadTables() {
     for (let i = 1; i <= 10; i++) d[`outdoor-${i}`] = makeEmptyTable();
     return d;
 }
-function saveTables() { localStorage.setItem(TABLES_KEY, JSON.stringify(tableData)); }
+function saveTables() { db.ref("tables").set(tableData); }
 function makeEmptyTable() { return { orders:[], total:0, isServed:false, isPaid:false, time:null }; }
 function tableStatus(key) {
     const t = tableData[key];
@@ -547,9 +547,9 @@ function confirmOrder() {
     updateZoneCounts();
 }
 function saveRevenueRecord(record) {
-    const all = JSON.parse(localStorage.getItem(REVENUE_KEY) || '[]');
+    const all = globalRevenue || [];
     all.push({ id: Date.now(), ...record });
-    localStorage.setItem(REVENUE_KEY, JSON.stringify(all));
+    db.ref("revenue").set(all);
 }
 
 // ============================================================
