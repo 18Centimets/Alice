@@ -209,7 +209,7 @@ function switchPage(pageId) {
         'revenue':'nav-revenue','inventory':'nav-inventory',
         'inv-export':'nav-inv-export',
         'expenses':'nav-expenses','summary':'nav-summary',
-        'logs':'nav-logs','users':'nav-users'
+        'logs':'nav-logs','users':'nav-users', 'profile':null
     };
     const targetNav = document.getElementById(navIdMap[pageId] || `nav-${pageId}`);
     if (targetPage) targetPage.classList.add('active');
@@ -971,7 +971,7 @@ function applyPermissions() {
     var navMap = {
         'revenue':'nav-revenue','inventory':'nav-inventory','inv-export':'nav-inv-export',
         'expenses':'nav-expenses','summary':'nav-summary','logs':'nav-logs',
-        'users':'nav-users','add-item':'nav-add-item','menu-manager':'nav-menu'
+        'users':'nav-users', 'profile':null,'add-item':'nav-add-item','menu-manager':'nav-menu'
     };
     Object.entries(navMap).forEach(function(kv) {
         var el = document.getElementById(kv[1]);
@@ -1140,4 +1140,109 @@ function renderShifts() {
             <td style="font-weight:bold">${totalStr}</td>
         </tr>`;
     }).join('');
+}
+
+// ==========================================
+//  PROFILE PAGE & SHIFT (ADMIN PANEL)
+// ==========================================
+function loadProfileUI() {
+    if (!currentUser) return;
+    const profile = (globalProfiles && globalProfiles[currentUser.id]) || {};
+    
+    // UI Setup
+    document.getElementById('profile-display-name').innerText = profile.name || currentUser.name || 'Người dùng';
+    document.getElementById('profile-display-role').innerText = ROLE_LABELS[currentUser.role] || currentUser.role;
+    
+    // Avatar init
+    const initial = (profile.name || currentUser.name || 'A').charAt(0).toUpperCase();
+    document.getElementById('profile-avatar-display').innerText = initial;
+    
+    // Inputs
+    const nInp = document.getElementById('profile-input-name');
+    const pInp = document.getElementById('profile-input-phone');
+    const aInp = document.getElementById('profile-input-address');
+    if (nInp && !nInp.value) nInp.value = profile.name || currentUser.name || '';
+    if (pInp && !pInp.value) pInp.value = profile.phone || '';
+    if (aInp && !aInp.value) aInp.value = profile.address || '';
+    
+    updateAdminShiftUI();
+}
+
+function saveProfile() {
+    if (!currentUser) return;
+    const name = document.getElementById('profile-input-name').value.trim();
+    const phone = document.getElementById('profile-input-phone').value.trim();
+    const address = document.getElementById('profile-input-address').value.trim();
+    
+    if (!name) { showToast('Vui lòng nhập họ tên!', 'error'); return; }
+    
+    db.ref('userProfiles/' + currentUser.id).set({
+        name, phone, address
+    });
+    
+    showToast('✅ Đã cập nhật hồ sơ cá nhân!');
+}
+
+function updateAdminShiftUI() {
+    const btnIn = document.getElementById('profile-btn-checkin');
+    const btnOut = document.getElementById('profile-btn-checkout');
+    const statusTxt = document.getElementById('profile-shift-today');
+    if (!btnIn || !btnOut || !currentUser) return;
+    
+    const sid = currentUser.id;
+    const dateStr = new Date().toISOString().slice(0,10);
+    const shifts = globalShifts || [];
+    const activeShift = shifts.find(s => s.userId === sid && s.date === dateStr && !s.out);
+    
+    if (activeShift) {
+        btnIn.style.display = 'none';
+        btnOut.style.display = 'block';
+        const dIn = new Date(activeShift.in);
+        statusTxt.innerHTML = `<span style="color:#2ecc71">Đang làm việc (vào lúc ${dIn.toLocaleTimeString('vi-VN')})</span>`;
+    } else {
+        btnIn.style.display = 'block';
+        btnOut.style.display = 'none';
+        
+        // Find if they worked today
+        const finishedShifts = shifts.filter(s => s.userId === sid && s.date === dateStr && s.out);
+        if (finishedShifts.length > 0) {
+            let totalMs = 0;
+            finishedShifts.forEach(s => totalMs += (s.out - s.in));
+            const hrs = Math.floor(totalMs / 3600000);
+            const mins = Math.floor((totalMs % 3600000) / 60000);
+            statusTxt.innerHTML = `<span style="color:#f39c12">Đã làm xong ${hrs}h ${mins}m</span>`;
+        } else {
+            statusTxt.innerHTML = `Chưa vào ca`;
+        }
+    }
+}
+
+function checkIn() {
+    if (!currentUser) return;
+    const shifts = globalShifts || [];
+    
+    shifts.push({
+        id: 'shift_' + Date.now(),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        date: new Date().toISOString().slice(0,10),
+        in: new Date().getTime(),
+        out: null
+    });
+    
+    db.ref('shifts').set(shifts);
+    showToast('✅ Đã bắt đầu ca làm việc!');
+}
+
+function checkOut() {
+    if (!currentUser) return;
+    const shifts = globalShifts || [];
+    const dateStr = new Date().toISOString().slice(0,10);
+    
+    const activeShift = shifts.find(s => s.userId === currentUser.id && s.date === dateStr && !s.out);
+    if (activeShift) {
+        activeShift.out = new Date().getTime();
+        db.ref('shifts').set(shifts);
+        showToast('✅ Đã kết thúc ca làm việc!');
+    }
 }

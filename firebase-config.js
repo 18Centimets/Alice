@@ -123,3 +123,10 @@ db.ref('shifts').on('value', snap => {
     if (typeof updateShiftUI === 'function') updateShiftUI();
     if (typeof renderShifts === 'function') renderShifts();
 });
+
+// PROFILES LISTENER
+let globalProfiles = null;
+db.ref('userProfiles').on('value', snap => {
+    globalProfiles = snap.val() || {};
+    if (typeof loadProfileUI === 'function') loadProfileUI();
+});
