@@ -100,6 +100,7 @@ function loadMenu() {
     return s ? JSON.parse(s) : defaultMenuData;
 }
 function loadTables() {
+    if (typeof globalTables !== 'undefined' && globalTables && Object.keys(globalTables).length > 0) return globalTables;
     const s = localStorage.getItem(TABLES_KEY);
     if (s) return JSON.parse(s);
     // Initialize 20 tables

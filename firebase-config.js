@@ -112,9 +112,14 @@ db.ref('permissions').on('value', snap => {
 
 db.ref('tables').on('value', snap => {
     globalTables = snap.val() || {};
-    if (typeof tableData !== 'undefined' && typeof renderMap === 'function' && document.getElementById('map-container')) {
+    if (typeof tableData !== 'undefined' && typeof renderFloorMap === 'function' && document.getElementById('indoor-tables')) {
         tableData = globalTables;
-        renderMap();
+        renderFloorMap();
+        if (typeof activeTableKey !== 'undefined' && activeTableKey && typeof openTablePanel === 'function') {
+            const num = activeTableKey.split('-')[1];
+            const zone = activeTableKey.split('-')[0];
+            openTablePanel(activeTableKey, num, zone);
+        }
     }
 });
 // SHIFTS LISTENER

@@ -910,7 +910,7 @@ function setSumPeriod(period) {
 function renderSummaryPage() {
     const key = document.getElementById('sum-date-input').value || '';
     // Revenue
-    const revAll = JSON.parse(localStorage.getItem(REVENUE_KEY) || '[]');
+    const revAll = globalRevenue || [];
     const revF   = revAll.filter(r => sumPeriod==='day' ? r.date===key : sumPeriod==='month' ? r.month===key : r.year===String(key));
     const revTotal = revF.reduce((s,r) => s + r.total, 0);
     // Expenses
@@ -1021,7 +1021,7 @@ function writeLog(action, detail) {
     db.ref("logs").set(logs.slice(0, 1000));
 }
 function renderLogs() {
-    var logs     = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    var logs     = globalLogs || [];
     var q        = (document.getElementById('log-search') ? document.getElementById('log-search').value : '').toLowerCase();
     var role     = document.getElementById('log-role-filter') ? document.getElementById('log-role-filter').value : 'all';
     var date     = document.getElementById('log-date-filter') ? document.getElementById('log-date-filter').value : '';
