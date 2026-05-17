@@ -113,7 +113,9 @@ function saveTables() { db.ref("tables").set(tableData); }
 function makeEmptyTable() { return { orders:[], total:0, isServed:false, isPaid:false, time:null }; }
 function tableStatus(key) {
     const t = tableData[key];
-    if (!t || t.orders.length === 0) return 'available';
+    if (!t) return 'available';
+    const orders = t.orders || [];
+    if (orders.length === 0) return 'available';
     if (t.isPaid) return 'paid';
     return 'occupied';
 }
@@ -196,12 +198,13 @@ function openTablePanel(key, num, zone) {
         occupiedDiv.style.display = 'block';
 
         // Order list
-        document.getElementById('panel-order-list').innerHTML = t.orders.map(o =>
+        const orders = t.orders || [];
+        document.getElementById('panel-order-list').innerHTML = orders.map(o =>
             `<div class="panel-order-row"><span>${o.title} <small style="color:var(--text-muted)">Size ${o.selectedSize||'M'} × ${o.qty}</small></span><span style="color:var(--primary)">${(o.price*o.qty).toLocaleString('vi-VN')}đ</span></div>`
         ).join('');
 
         document.getElementById('panel-time').textContent = t.time || '—';
-        document.getElementById('panel-total').textContent = t.total.toLocaleString('vi-VN') + 'đ';
+        document.getElementById('panel-total').textContent = (t.total||0).toLocaleString('vi-VN') + 'đ';
         document.getElementById('panel-served-status').innerHTML = t.isServed
             ? '<span style="color:#2ecc71">✅ Đã ra món</span>'
             : '<span style="color:var(--primary)">⏳ Chưa ra món</span>';
@@ -211,6 +214,9 @@ function openTablePanel(key, num, zone) {
 
         document.getElementById('panel-serve-btn').style.display = t.isServed ? 'none' : 'flex';
         document.getElementById('panel-pay-btn').style.display   = t.isPaid   ? 'none' : 'flex';
+        // Show/hide add-more button (only if not yet paid)
+        const addMoreBtn = document.getElementById('panel-add-more-btn');
+        if (addMoreBtn) addMoreBtn.style.display = t.isPaid ? 'none' : 'flex';
     }
 
     panelEl.classList.add('open');
@@ -240,9 +246,10 @@ function markPaid() {
     showToast('💜 Đã thanh toán!');
     
     const table = tableData[activeTableKey];
+    const orders = table.orders || [];
     printReceipt({
-        items: table.items,
-        total: table.items.reduce((sum, item) => sum + (item.price * item.qty), 0),
+        items: orders,
+        total: orders.reduce((sum, item) => sum + (item.price * item.qty), 0),
         table: 'Bàn ' + activeTableKey
     });
 }
@@ -441,7 +448,16 @@ function setupCheckout() {
     };
 }
 function openCheckoutModal() {
-    resetOrderType();
+    // If table was pre-selected via "Gọi Bổ Sung", skip selection steps
+    if (selectedOrderType === 'dine-in' && selectedTableKey) {
+        const num = selectedTableKey.split('-')[1];
+        const zone = selectedTableKey.split('-')[0];
+        document.getElementById('order-type-section').style.display = 'none';
+        document.getElementById('table-selection-section').style.display = 'none';
+        showOrderSummary(selectedTableKey, num, zone);
+    } else {
+        resetOrderType();
+    }
     document.getElementById('checkout-modal').classList.add('active');
     document.body.style.overflow = 'hidden';
     closeCart();
@@ -449,6 +465,9 @@ function openCheckoutModal() {
 function closeCheckoutModal() {
     document.getElementById('checkout-modal').classList.remove('active');
     document.body.style.overflow = '';
+    // Reset pre-selected state from addMoreToTable
+    selectedOrderType = null;
+    selectedTableKey = null;
 }
 function selectOrderType(type) {
     selectedOrderType = type;
@@ -522,7 +541,7 @@ function confirmOrder() {
 
     if (selectedOrderType === 'dine-in' && selectedTableKey) {
         const t = tableData[selectedTableKey];
-        t.orders = [...t.orders, ...cart.map(i => ({ ...i }))];
+        t.orders = [...(t.orders || []), ...cart.map(i => ({ ...i }))];
         t.total  += total;
         t.isServed = false;
         t.paymentMethod = selectedPaymentMethod;
@@ -583,7 +602,8 @@ function showToast(msg) {
 //  MERGE TABLE & PRINT RECEIPT
 // ============================================================
 function openMergeTableModal() {
-    if (!activeTableKey || !tableData[activeTableKey] || !tableData[activeTableKey].items.length) {
+    const tbl = tableData[activeTableKey];
+    if (!activeTableKey || !tbl || !(tbl.orders || []).length) {
         showToast('Bàn đang trống, không thể gộp!');
         return;
     }
@@ -593,7 +613,8 @@ function openMergeTableModal() {
     
     let hasOthers = false;
     Object.keys(tableData).forEach(key => {
-        if (key !== activeTableKey && tableData[key].items && tableData[key].items.length > 0) {
+        const other = tableData[key];
+        if (key !== activeTableKey && other && (other.orders || []).length > 0) {
             hasOthers = true;
             list.innerHTML += `<button class="btn-panel-action" style="background:#2ecc71;color:#fff;border:none;padding:15px;cursor:pointer;border-radius:10px;" onclick="mergeTable('${key}')">Bàn ${key}</button>`;
         }
@@ -613,8 +634,9 @@ function mergeTable(targetKey) {
     const sourceTable = tableData[activeTableKey];
     const targetTable = tableData[targetKey];
     
-    // Add items
-    targetTable.items = [...targetTable.items, ...sourceTable.items];
+    // Add orders
+    targetTable.orders = [...(targetTable.orders || []), ...(sourceTable.orders || [])];
+    targetTable.total  = (targetTable.total||0) + (sourceTable.total||0);
     targetTable.isPaid = false; 
     
     // Clear source
@@ -626,6 +648,25 @@ function mergeTable(targetKey) {
     closeMergeModal();
     closeTablePanel();
     showToast(`✅ Đã gộp thành công vào Bàn ${targetKey}!`);
+}
+
+// ============================================================
+//  ADD MORE ITEMS TO EXISTING TABLE
+// ============================================================
+function addMoreToTable() {
+    if (!activeTableKey) return;
+    const t = tableData[activeTableKey];
+    if (!t || t.isPaid) {
+        showToast('Bàn này đã thanh toán, không thể gọi thêm!');
+        return;
+    }
+    // Pre-select this table for the next order
+    selectedOrderType = 'dine-in';
+    selectedTableKey = activeTableKey;
+    closeTablePanel();
+    // Scroll to menu
+    document.getElementById('menu').scrollIntoView({ behavior: 'smooth' });
+    showToast(`📝 Chọn thêm món cho ${activeTableKey.replace('-',' ')} rồi bấm giỏ hàng!`);
 }
 
 function printReceipt(data) {
