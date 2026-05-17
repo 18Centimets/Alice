@@ -95,6 +95,11 @@ document.addEventListener('DOMContentLoaded', () => {
 //  DATA LAYER
 // ==========================================
 
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('admin-sidebar');
+    if (sidebar) sidebar.classList.toggle('show-mobile');
+}
+
 function loadMenuData() {
     const stored = globalMenu;
     if (stored && stored.length > 0) {
@@ -206,6 +211,13 @@ function switchPage(pageId) {
     if (!hasPermission(pageId)) {
         showToast('\u26d4 B\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp trang n\u00e0y', 'error'); return;
     }
+
+    // Hide mobile sidebar if open
+    const sidebar = document.getElementById('admin-sidebar');
+    if (sidebar && sidebar.classList.contains('show-mobile')) {
+        sidebar.classList.remove('show-mobile');
+    }
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const targetPage = document.getElementById(`page-${pageId}`);

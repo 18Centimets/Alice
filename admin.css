@@ -107,15 +107,25 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
 .admin-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 1.5rem 2.5rem;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: rgba(18, 18, 18, 0.8);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
-    background: rgba(10, 10, 10, 0.8);
-    backdrop-filter: blur(10px);
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: 100;
+}
+
+#mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
 }
 
 .admin-header h1 {
@@ -764,6 +774,17 @@ form { padding: 0 2rem 2rem; }
 @media (max-width: 768px) {
     :root { --sidebar-w: 0px; }
     #admin-sidebar { display: none; }
+    #mobile-menu-btn { display: block; }
+    #admin-sidebar.show-mobile {
+        display: flex;
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        width: 280px;
+        z-index: 9999;
+        background: #0f0f0f;
+        border-right: 1px solid var(--border);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.8);
+    }
     .price-grid { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
 }
