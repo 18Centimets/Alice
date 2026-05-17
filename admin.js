@@ -51,6 +51,11 @@ let allItems = [];
 let currentImageDataURL = '';
 let deleteTargetId = null;
 
+// Profile variables
+var currentEditingProfileId = null;
+var currentProfileAvatarBase64 = null;
+var currentProfileCoverBase64 = null;
+
 // ---- DOM Refs ----
 const menuTableBody = document.getElementById('menu-table-body');
 const totalCount = document.getElementById('total-items-count');
@@ -79,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (expDate) expDate.value = new Date().toISOString().slice(0,10);
     const expMonth = document.getElementById('exp-filter-month');
     if (expMonth) expMonth.value = new Date().toISOString().slice(0,7);
-    writeLog('MỮ TRANG', 'Mở trang quản lý Admin Panel');
+    writeLog('MỞ TRANG', 'Mở trang quản lý Admin Panel');
     // User role: auto redirect to expenses page (their only page)
     if (currentUser && currentUser.role === 'user') {
         switchPage('expenses');
@@ -1087,7 +1092,7 @@ function renderUsersPage() {
             '<td><span class="cat-badge ' + (roleCls[u.role]||'') + '">' + (ROLE_LABELS[u.role]||u.role) + '</span></td>' +
             '<td>' + getEffectivePages(u.id, u.role).length + ' trang • ' +
             (customPages.length > 0 ? '<span style="color:var(--primary);font-size:.78rem">➕ ' + customPages.length + ' quyền thêm</span>' : '<span style="color:var(--text-muted);font-size:.78rem">quyền cơ bản</span>') +
-            '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\\'' + u.id + '\\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
+            '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\'' + u.id + '\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
 
         return mainRow + toggleHtml;
     }).join('');
@@ -1147,9 +1152,6 @@ function renderShifts() {
 // ==========================================
 //  PROFILE PAGE & SHIFT (ADMIN PANEL)
 // ==========================================
-let currentEditingProfileId = null;
-let currentProfileAvatarBase64 = null;
-let currentProfileCoverBase64 = null;
 
 function openUserProfile(targetId) {
     if (!currentUser) return;
