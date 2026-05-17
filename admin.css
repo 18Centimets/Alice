@@ -951,7 +951,9 @@ form { padding: 0 2rem 2rem; }
 .btn-logout:hover { background: rgba(231,76,60,.1); border-color: #e74c3c; }
 
 /* Sidebar flex layout to push logout to bottom */
-#admin-sidebar { display: flex; flex-direction: column; }
+@media (min-width: 769px) {
+    #admin-sidebar { display: flex; flex-direction: column; }
+}
 .sidebar-nav { flex: 1; }
 
 /* ===== LOGS PAGE ===== */
