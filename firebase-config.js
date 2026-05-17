@@ -71,8 +71,11 @@ db.ref('menu').on('value', snap => {
         allItems = globalMenu || (typeof defaultMenu !== 'undefined' ? defaultMenu : []);
         renderTable(allItems);
     }
-    if (typeof loadProducts === 'function' && document.getElementById('menu-grid')) {
-        loadProducts(); // app.js
+    if (typeof renderMenu === 'function' && document.getElementById('menu-grid')) {
+        menuData = globalMenu || (typeof defaultMenuData !== 'undefined' ? defaultMenuData : []);
+        const activeFilter = document.querySelector('.filter-btn.active');
+        const cat = activeFilter ? activeFilter.dataset.category : 'all';
+        renderMenu(cat === 'all' ? menuData : menuData.filter(i => i.category === cat));
     }
 });
 
