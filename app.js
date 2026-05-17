@@ -244,14 +244,6 @@ function markPaid() {
     updateTableBtn(activeTableKey);
     openTablePanel(activeTableKey, activeTableKey.split('-')[1], activeTableKey.split('-')[0]);
     showToast('💜 Đã thanh toán!');
-    
-    const table = tableData[activeTableKey];
-    const orders = table.orders || [];
-    printReceipt({
-        items: orders,
-        total: orders.reduce((sum, item) => sum + (item.price * item.qty), 0),
-        table: 'Bàn ' + activeTableKey
-    });
 }
 function clearTable() {
     if (!activeTableKey) return;
@@ -573,12 +565,6 @@ function confirmOrder() {
     updateCartUI();
     closeCheckoutModal();
     updateZoneCounts();
-    
-    printReceipt({
-        items: recordToPrint.items,
-        total: recordToPrint.total,
-        table: recordToPrint.tableKey === 'takeaway' ? 'Mang đi' : 'Bàn ' + recordToPrint.tableKey
-    });
 }
 function saveRevenueRecord(record) {
     const all = globalRevenue || [];
@@ -686,6 +672,22 @@ function printReceipt(data) {
     `).join('');
     document.getElementById('print-total-amount').innerText = data.total.toLocaleString('vi-VN') + 'đ';
     window.print();
+}
+
+function printTableBill() {
+    if (!activeTableKey) return;
+    const table = tableData[activeTableKey];
+    if (!table) return;
+    const orders = table.orders || [];
+    if (orders.length === 0) {
+        showToast('Bàn chưa có đơn hàng để in!');
+        return;
+    }
+    printReceipt({
+        items: orders,
+        total: (table.total || 0),
+        table: 'Bàn ' + activeTableKey
+    });
 }
 
 // ============================================================
