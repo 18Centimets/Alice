@@ -50,6 +50,7 @@ const defaultMenu = [
 let allItems = [];
 let currentImageDataURL = '';
 let deleteTargetId = null;
+let _isSavingMenu = false; // Guard flag to prevent listener overwrite during save
 
 // Profile variables
 var currentEditingProfileId = null;
@@ -67,9 +68,9 @@ const filterCategory = document.getElementById('filter-category');
 const toast = document.getElementById('toast');
 
 // ---- Init ----
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!checkAuth()) return;
-    loadMenuData();
+    await loadMenuData();
     renderTable(allItems);
     setupNavigation();
     setupForm();
@@ -100,10 +101,18 @@ function toggleMobileMenu() {
     if (sidebar) sidebar.classList.toggle('show-mobile');
 }
 
-function loadMenuData() {
-    const stored = globalMenu;
-    if (stored && stored.length > 0) {
-        allItems = stored;
+async function loadMenuData() {
+    // Wait for Firebase data if not yet loaded
+    if (!globalMenu) {
+        try {
+            const snap = await db.ref('menu').once('value');
+            globalMenu = snap.val() || null;
+        } catch(e) {
+            console.error('Error loading menu from Firebase:', e);
+        }
+    }
+    if (globalMenu && globalMenu.length > 0) {
+        allItems = globalMenu;
     } else {
         allItems = defaultMenu.map(item => ({ ...item }));
         saveMenuData();
@@ -111,7 +120,12 @@ function loadMenuData() {
 }
 
 function saveMenuData() {
-    db.ref("menu").set(allItems);
+    _isSavingMenu = true;
+    db.ref("menu").set(allItems).then(() => {
+        _isSavingMenu = false;
+    }).catch(() => {
+        _isSavingMenu = false;
+    });
 }
 
 function getNextId() {

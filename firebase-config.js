@@ -68,7 +68,10 @@ async function migrateLocalData() {
 db.ref('menu').on('value', snap => {
     globalMenu = snap.val() || null;
     if (typeof allItems !== 'undefined' && typeof renderTable === 'function' && document.getElementById('menu-table-body')) {
-        allItems = globalMenu || (typeof defaultMenu !== 'undefined' ? defaultMenu : []);
+        // Don't overwrite allItems while a save is in progress (prevents race condition)
+        if (typeof _isSavingMenu === 'undefined' || !_isSavingMenu) {
+            allItems = globalMenu || (typeof defaultMenu !== 'undefined' ? defaultMenu : []);
+        }
         renderTable(allItems);
     }
     if (typeof renderMenu === 'function' && document.getElementById('menu-grid')) {
