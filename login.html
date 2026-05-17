@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -128,7 +128,7 @@ async function doLogin() {
         datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
     db.ref('logs').set(logs.slice(0, 500));
     
-    window.location.href = user.role === 'user' ? 'admin.html' : 'admin.html';
+    window.location.href = user.role === 'user' ? 'index.html' : 'admin.html';
 }
 </script>
 </body>
