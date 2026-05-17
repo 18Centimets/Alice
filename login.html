@@ -112,23 +112,61 @@ document.getElementById('login-user').addEventListener('keydown', e => { if(e.ke
 async function doLogin() {
     const uid  = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value;
-    const user = SYSTEM_USERS.find(u => u.id === uid && u.password === pass);
     const errEl = document.getElementById('error-msg');
-    if (!user) { errEl.style.display='block'; return; }
-    errEl.style.display = 'none';
-    sessionStorage.setItem('aura_session', JSON.stringify({ ...user, loginTime: new Date().toISOString() }));
-    
-    document.getElementById('login-btn').innerText = 'Đang đồng bộ...';
-    await migrateLocalData(); // Wait for data to be migrated if first time
+    const loginBtn = document.getElementById('login-btn');
 
-    // Write log
-    const logs = globalLogs || [];
-    logs.unshift({ id: Date.now(), userId: user.id, userName: user.name, role: user.role,
-        action: 'ĐĂNG NHẬP', detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
-        datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
-    db.ref('logs').set(logs.slice(0, 500));
-    
-    window.location.href = user.role === 'user' ? 'index.html' : 'admin.html';
+    loginBtn.innerText = 'Đang kiểm tra...';
+    loginBtn.disabled = true;
+
+    try {
+        let snap = await db.ref('users').once('value');
+        let users = snap.val();
+        
+        if (!users) {
+            // First time init
+            users = SYSTEM_USERS;
+            await db.ref('users').set(users);
+        }
+
+        const user = users.find(u => u.id === uid && u.password === pass);
+        
+        if (!user) {
+            errEl.innerText = '❌ Tên đăng nhập hoặc mật khẩu không đúng';
+            errEl.style.display='block';
+            loginBtn.innerText = 'Đăng Nhập →';
+            loginBtn.disabled = false;
+            return; 
+        }
+
+        if (user.isSuspended) {
+            errEl.innerText = '❌ Tài khoản của bạn đã bị khóa';
+            errEl.style.display='block';
+            loginBtn.innerText = 'Đăng Nhập →';
+            loginBtn.disabled = false;
+            return;
+        }
+
+        errEl.style.display = 'none';
+        sessionStorage.setItem('aura_session', JSON.stringify({ ...user, loginTime: new Date().toISOString() }));
+        
+        loginBtn.innerText = 'Đang đồng bộ...';
+        await migrateLocalData(); // Wait for data to be migrated if first time
+
+        // Write log
+        const logs = globalLogs || [];
+        logs.unshift({ id: Date.now(), userId: user.id, userName: user.name, role: user.role,
+            action: 'ĐĂNG NHẬP', detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+            datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
+        db.ref('logs').set(logs.slice(0, 500));
+        
+        window.location.href = user.role === 'user' ? 'index.html' : 'admin.html';
+    } catch (e) {
+        console.error(e);
+        errEl.innerText = '❌ Lỗi kết nối máy chủ';
+        errEl.style.display='block';
+        loginBtn.innerText = 'Đăng Nhập →';
+        loginBtn.disabled = false;
+    }
 }
 </script>
 </body>

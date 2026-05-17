@@ -174,7 +174,22 @@ function updateZoneCounts() {
 // ============================================================
 //  TABLE DETAIL PANEL
 // ============================================================
+function isUserCheckedIn() {
+    const user = JSON.parse(sessionStorage.getItem('aura_session'));
+    if (!user) return false;
+    if (user.role !== 'user') return true; // Admins are not restricted
+
+    const shifts = globalShifts || [];
+    const dateStr = new Date().toISOString().slice(0,10);
+    const activeShift = shifts.find(s => s.userId === user.id && s.date === dateStr && !s.out);
+    return !!activeShift;
+}
+
 function openTablePanel(key, num, zone) {
+    if (!isUserCheckedIn()) {
+        showToast('❌ Vui lòng Check-in (Vào ca) trước khi thao tác!');
+        return;
+    }
     activeTableKey = key;
     const t = tableData[key];
     const stat = tableStatus(key);
@@ -440,6 +455,10 @@ function setupCheckout() {
     };
 }
 function openCheckoutModal() {
+    if (!isUserCheckedIn()) {
+        showToast('❌ Vui lòng Check-in (Vào ca) trước khi thao tác!');
+        return;
+    }
     // If table was pre-selected via "Gọi Bổ Sung", skip selection steps
     if (selectedOrderType === 'dine-in' && selectedTableKey) {
         const num = selectedTableKey.split('-')[1];

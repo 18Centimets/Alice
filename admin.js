@@ -1074,9 +1074,10 @@ function renderUsersPage() {
     if (!tbody) return;
     var isAdmin = currentUser && currentUser.role === 'administrator';
     var roleCls = { administrator:'cat-pastry', admin:'cat-smoothie', user:'cat-coffee' };
-    var custom  = JSON.parse(localStorage.getItem(CUSTOM_PERMS_KEY) || '{}');
+    var custom  = globalPermissions || {};
+    var users = globalUsers || [];
 
-    tbody.innerHTML = SYSTEM_USERS.map(function(u) {
+    tbody.innerHTML = users.map(function(u) {
         var isMe = currentUser && u.id === currentUser.id;
         var basePages   = ROLE_PAGES[u.role] || [];
         var customPages = custom[u.id] || [];
@@ -1097,14 +1098,25 @@ function renderUsersPage() {
             }).join('');
             toggleHtml = '<tr class="perm-row-expand"><td colspan="4"><div class="perm-chips-wrap"><span class="perm-chips-label">🔑 Quyền được cấp:</span>' + chips + '</div></td></tr>';
         }
+        var statusBadge = u.isSuspended ? '<span style="color:#e74c3c;font-weight:bold;font-size:0.8rem;">Đã Khóa</span>' : '<span style="color:#2ecc71;font-weight:bold;font-size:0.8rem;">Đang Mở</span>';
+
+        var actionBtns = '<button class="btn-action primary" onclick="openUserProfile(\'' + u.id + '\')" style="padding:5px;font-size:0.75rem;margin-right:5px;">Hồ Sơ</button>';
+        
+        if (isAdmin && !isOwner && !isMe) {
+            if (u.isSuspended) {
+                actionBtns += '<button class="btn-action" style="background:#2ecc71;color:#fff;padding:5px;font-size:0.75rem;margin-right:5px;" onclick="toggleSuspendUser(\'' + u.id + '\')">Mở</button>';
+            } else {
+                actionBtns += '<button class="btn-action" style="background:#f39c12;color:#fff;padding:5px;font-size:0.75rem;margin-right:5px;" onclick="toggleSuspendUser(\'' + u.id + '\')">Khóa</button>';
+            }
+            actionBtns += '<button class="btn-action" style="background:#e74c3c;color:#fff;padding:5px;font-size:0.75rem;" onclick="deleteUser(\'' + u.id + '\')">Xóa</button>';
+        }
 
         var mainRow = '<tr' + (isMe ? ' style="background:rgba(212,175,55,.06)"' : '') + '>' +
             '<td><strong>' + u.id + '</strong>' + (isMe ? ' <span style="color:var(--primary);font-size:.75rem">(bạn)</span>' : '') + '</td>' +
             '<td>' + u.name + '</td>' +
             '<td><span class="cat-badge ' + (roleCls[u.role]||'') + '">' + (ROLE_LABELS[u.role]||u.role) + '</span></td>' +
-            '<td>' + getEffectivePages(u.id, u.role).length + ' trang • ' +
-            (customPages.length > 0 ? '<span style="color:var(--primary);font-size:.78rem">➕ ' + customPages.length + ' quyền thêm</span>' : '<span style="color:var(--text-muted);font-size:.78rem">quyền cơ bản</span>') +
-            '</td>' + '<td><button class="btn-action primary" onclick="openUserProfile(\'' + u.id + '\')" style="padding:5px 10px;font-size:0.8rem">Xem Hồ Sơ</button></td></tr>';
+            '<td>' + statusBadge + '</td>' + 
+            '<td>' + actionBtns + '</td></tr>';
 
         return mainRow + toggleHtml;
     }).join('');
@@ -1120,6 +1132,63 @@ function toggleCustomPerm(userId, pageId) {
     writeLog('CẤP QUYỀN', 'Cập nhật quyền [' + pageId + '] cho tài khoản ' + userId);
     renderUsersPage();
     showToast('✅ Đã cập nhật quyền!');
+}
+
+function createNewUser() {
+    const id = document.getElementById('new-user-id').value.trim();
+    const name = document.getElementById('new-user-name').value.trim();
+    const role = document.getElementById('new-user-role').value;
+    const pass = document.getElementById('new-user-pass').value;
+    
+    if (!id || !name || !pass) {
+        showToast('❌ Vui lòng nhập đầy đủ ID, Tên và Mật khẩu!', 'error');
+        return;
+    }
+    
+    if (pass.length <= 4 || pass.length >= 12) {
+        showToast('❌ Mật khẩu phải dài từ 5 đến 11 ký tự!', 'error');
+        return;
+    }
+    
+    let users = globalUsers || [];
+    if (users.find(u => u.id === id)) {
+        showToast('❌ Tên đăng nhập (ID) này đã tồn tại!', 'error');
+        return;
+    }
+    
+    users.push({ id, name, role, password: pass, isSuspended: false });
+    db.ref('users').set(users);
+    
+    writeLog('TẠO TÀI KHOẢN', 'Tạo tài khoản mới: ' + id);
+    showToast('✅ Đã tạo tài khoản thành công!');
+    
+    document.getElementById('new-user-id').value = '';
+    document.getElementById('new-user-name').value = '';
+    document.getElementById('new-user-pass').value = '';
+}
+
+function toggleSuspendUser(targetId) {
+    let users = globalUsers || [];
+    const userIndex = users.findIndex(u => u.id === targetId);
+    if (userIndex === -1) return;
+    
+    users[userIndex].isSuspended = !users[userIndex].isSuspended;
+    db.ref('users').set(users);
+    
+    const act = users[userIndex].isSuspended ? 'Khóa' : 'Mở khóa';
+    writeLog('TRẠNG THÁI TÀI KHOẢN', act + ' tài khoản ' + targetId);
+    showToast(`✅ Đã ${act.toLowerCase()} tài khoản!`);
+}
+
+function deleteUser(targetId) {
+    if (!confirm(`Bạn có CHẮC CHẮN muốn thu hồi (xóa) tài khoản ${targetId} vĩnh viễn?`)) return;
+    
+    let users = globalUsers || [];
+    users = users.filter(u => u.id !== targetId);
+    db.ref('users').set(users);
+    
+    writeLog('XÓA TÀI KHOẢN', 'Đã thu hồi tài khoản ' + targetId);
+    showToast('✅ Đã xóa tài khoản!');
 }
 
 // ==========================================
@@ -1167,7 +1236,8 @@ function renderShifts() {
 
 function openUserProfile(targetId) {
     if (!currentUser) return;
-    const targetUser = SYSTEM_USERS.find(u => u.id === targetId);
+    const users = globalUsers || [];
+    const targetUser = users.find(u => u.id === targetId);
     if (!targetUser) return;
     
     // Permission check
@@ -1200,7 +1270,8 @@ function loadProfileUI(canEdit = true, targetUserObj = null) {
     if (currentEditingProfileId === currentUser.id) canEdit = true;
     
     const targetId = currentEditingProfileId;
-    let tUser = targetUserObj || SYSTEM_USERS.find(u => u.id === targetId);
+    const users = globalUsers || [];
+    let tUser = targetUserObj || users.find(u => u.id === targetId);
     if (!tUser) tUser = currentUser;
     
     const profile = (globalProfiles && globalProfiles[targetId]) || {};
@@ -1265,6 +1336,48 @@ function saveProfile() {
     });
     
     showToast('✅ Đã cập nhật hồ sơ cá nhân!');
+}
+
+function changePassword() {
+    const oldPass = document.getElementById('profile-input-old-pass').value;
+    const newPass = document.getElementById('profile-input-new-pass').value;
+    const confirmPass = document.getElementById('profile-input-confirm-pass').value;
+    
+    if (!oldPass || !newPass || !confirmPass) {
+        showToast('❌ Vui lòng nhập đầy đủ thông tin!', 'error');
+        return;
+    }
+    
+    if (newPass.length <= 4 || newPass.length >= 12) {
+        showToast('❌ Mật khẩu mới phải dài từ 5 đến 11 ký tự!', 'error');
+        return;
+    }
+    
+    if (newPass !== confirmPass) {
+        showToast('❌ Mật khẩu mới không khớp!', 'error');
+        return;
+    }
+    
+    const users = globalUsers || [];
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    
+    if (userIndex === -1) {
+        showToast('❌ Lỗi: Không tìm thấy tài khoản!', 'error');
+        return;
+    }
+    
+    if (users[userIndex].password !== oldPass) {
+        showToast('❌ Mật khẩu cũ không chính xác!', 'error');
+        return;
+    }
+    
+    users[userIndex].password = newPass;
+    db.ref('users').set(users);
+    showToast('✅ Đổi mật khẩu thành công!');
+    
+    document.getElementById('profile-input-old-pass').value = '';
+    document.getElementById('profile-input-new-pass').value = '';
+    document.getElementById('profile-input-confirm-pass').value = '';
 }
 
 function handleImageUpload(event, type) {

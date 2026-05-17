@@ -135,3 +135,10 @@ db.ref('userProfiles').on('value', snap => {
     globalProfiles = snap.val() || {};
     if (typeof loadProfileUI === 'function') loadProfileUI();
 });
+
+// USERS LISTENER (Auth & Management)
+let globalUsers = null;
+db.ref('users').on('value', snap => {
+    globalUsers = snap.val() || null;
+    if (typeof renderUsersPage === 'function' && document.getElementById('users-table-body')) renderUsersPage();
+});

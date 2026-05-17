@@ -512,21 +512,49 @@
                 <div class="glass-card" style="overflow:hidden;">
                     <div class="table-toolbar"><span style="font-weight:600">👥 Danh Sách Tài Khoản Hệ Thống</span></div>
                     <table class="menu-table">
-                        <thead><tr><th>Tài Khoản</th><th>Họ Tên</th><th>Vai Trò</th><th>Phân Quyền</th><th style="width:100px;">Thao Tác</th></tr></thead>
+                        <thead><tr><th>Tài Khoản</th><th>Họ Tên</th><th>Vai Trò</th><th>Trạng Thái</th><th style="width:180px;">Thao Tác</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
-                <div class="glass-card" style="padding:1.5rem;">
-                    <h3 style="margin-bottom:1rem;font-size:1rem">Ma Trận Phân Quyền</h3>
-                    <div class="perm-matrix">
-                        <div class="perm-row perm-header"><span>Chức năng</span><span>Admin</span><span>Admin</span><span>User</span></div>
-                        <div class="perm-row"><span>Quản lý thực đơn</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Doanh thu / Chi phí</span><span class="p-yes">✔</span><span class="p-no">✘</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Vật tư tồn kho</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Báo cáo tổng</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Nhật ký thao tác</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Quản lý tài khoản</span><span class="p-yes">✔</span><span class="p-no">✘</span><span class="p-no">✘</span></div>
-                        <div class="perm-row"><span>Gọi món (POS)</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-yes">✔</span></div>
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <!-- Add User Form -->
+                    <div class="glass-card" style="padding:1.5rem;" id="add-user-section">
+                        <h3 style="margin-bottom:1rem;font-size:1rem">➕ Thêm Tài Khoản Mới</h3>
+                        <div class="form-group">
+                            <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Tên đăng nhập (ID)</label>
+                            <input type="text" id="new-user-id" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Ví dụ: user02">
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Họ tên</label>
+                            <input type="text" id="new-user-name" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Tên hiển thị">
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Vai trò</label>
+                            <select id="new-user-role" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;">
+                                <option value="user">Nhân Viên Phục Vụ (User)</option>
+                                <option value="admin">Quản Lý Quán (Admin)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Mật khẩu khởi tạo</label>
+                            <input type="text" id="new-user-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Từ 5-11 ký tự">
+                        </div>
+                        <button class="btn-action primary" onclick="createNewUser()" style="width:100%; padding:10px; border-radius:8px; font-weight:bold; background:#2ecc71; color:#fff;">Tạo Tài Khoản</button>
+                    </div>
+
+                    <!-- Permission Matrix -->
+                    <div class="glass-card" style="padding:1.5rem;">
+                        <h3 style="margin-bottom:1rem;font-size:1rem">Ma Trận Phân Quyền</h3>
+                        <div class="perm-matrix">
+                            <div class="perm-row perm-header"><span>Chức năng</span><span>Admin</span><span>Admin</span><span>User</span></div>
+                            <div class="perm-row"><span>Quản lý thực đơn</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Doanh thu / Chi phí</span><span class="p-yes">✔</span><span class="p-no">✘</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Vật tư tồn kho</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Báo cáo tổng</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Nhật ký thao tác</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Quản lý tài khoản</span><span class="p-yes">✔</span><span class="p-no">✘</span><span class="p-no">✘</span></div>
+                            <div class="perm-row"><span>Gọi món (POS)</span><span class="p-yes">✔</span><span class="p-yes">✔</span><span class="p-yes">✔</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -645,6 +673,26 @@
                             <input type="text" id="profile-input-address" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Số nhà, đường, quận/huyện...">
                         </div>
                         <button id="btn-save-profile" class="btn-action primary" onclick="saveProfile()" style="width:100%; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem;">Lưu Thay Đổi</button>
+                    </div>
+
+                    <!-- Change Password Form -->
+                    <div class="glass-card" style="padding:1.5rem; grid-column: 1 / -1;">
+                        <h3 style="margin-bottom:1rem; font-size:1.1rem; border-bottom:1px solid var(--border); padding-bottom:10px;">🔐 Đổi Mật Khẩu</h3>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom:1.5rem;">
+                            <div class="form-group">
+                                <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Mật khẩu cũ</label>
+                                <input type="password" id="profile-input-old-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Nhập mật khẩu cũ">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Mật khẩu mới</label>
+                                <input type="password" id="profile-input-new-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Từ 5-11 ký tự">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Nhập lại mật khẩu mới</label>
+                                <input type="password" id="profile-input-confirm-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Xác nhận mật khẩu">
+                            </div>
+                        </div>
+                        <button id="btn-change-password" class="btn-action primary" onclick="changePassword()" style="width:100%; max-width:200px; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; background:var(--primary); color:#000;">Đổi Mật Khẩu</button>
                     </div>
                 </div>
             </div>
