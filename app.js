@@ -661,7 +661,7 @@ function mergeTable(targetKey) {
 function addMoreToTable() {
     if (!activeTableKey) return;
     const t = tableData[activeTableKey];
-    if (!t || t.isPaid) {
+    if (t && t.isPaid) {
         showToast('Bàn này đã thanh toán, không thể gọi thêm!');
         return;
     }
