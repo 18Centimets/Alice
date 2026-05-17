@@ -126,6 +126,18 @@ async function doLogin() {
             // First time init
             users = SYSTEM_USERS;
             await db.ref('users').set(users);
+        } else {
+            // Handle cases where Firebase converts array to object due to deleted indices
+            if (!Array.isArray(users)) {
+                users = Object.values(users);
+            }
+            users = users.filter(u => u != null);
+            
+            // Auto-recovery: If superadmin is missing, restore it
+            if (!users.find(u => u.id === 'superadmin')) {
+                users.unshift(SYSTEM_USERS[0]);
+                await db.ref('users').set(users);
+            }
         }
 
         const user = users.find(u => u.id === uid && u.password === pass);
