@@ -50,7 +50,7 @@ const defaultMenu = [
 let allItems = [];
 let currentImageDataURL = '';
 let deleteTargetId = null;
-let _isSavingMenu = false; // Guard flag to prevent listener overwrite during save
+window._isSavingMenu = false; // Guard flag to prevent listener overwrite during save
 
 // Profile variables
 var currentEditingProfileId = null;
@@ -120,11 +120,11 @@ async function loadMenuData() {
 }
 
 function saveMenuData() {
-    _isSavingMenu = true;
+    window._isSavingMenu = true;
     db.ref("menu").set(allItems).then(() => {
-        _isSavingMenu = false;
+        window._isSavingMenu = false;
     }).catch(() => {
-        _isSavingMenu = false;
+        window._isSavingMenu = false;
     });
 }
 

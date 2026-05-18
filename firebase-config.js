@@ -69,7 +69,7 @@ db.ref('menu').on('value', snap => {
     globalMenu = snap.val() || null;
     if (typeof allItems !== 'undefined' && typeof renderTable === 'function' && document.getElementById('menu-table-body')) {
         // Don't overwrite allItems while a save is in progress (prevents race condition)
-        if (typeof _isSavingMenu === 'undefined' || !_isSavingMenu) {
+        if (typeof window._isSavingMenu === 'undefined' || !window._isSavingMenu) {
             allItems = globalMenu || (typeof defaultMenu !== 'undefined' ? defaultMenu : []);
         }
         renderTable(allItems);
