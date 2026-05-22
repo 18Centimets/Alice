@@ -96,6 +96,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser && currentUser.role === 'user') {
         switchPage('expenses');
     }
+
+    // Tự động đóng menu trên di động khi click ra ngoài
+    document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('admin-sidebar');
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        if (sidebar && sidebar.classList.contains('show-mobile')) {
+            if (!sidebar.contains(e.target) && (!mobileBtn || !mobileBtn.contains(e.target))) {
+                sidebar.classList.remove('show-mobile');
+            }
+        }
+    });
 });
 
 // ==========================================
@@ -112,10 +123,16 @@ async function loadMenuData() {
     if (!globalMenu) {
         try {
             const snap = await db.ref('menu').once('value');
-            globalMenu = snap.val() || null;
+            let val = snap.val() || null;
+            if (val && typeof val === 'object' && !Array.isArray(val)) {
+                val = Object.values(val);
+            }
+            globalMenu = val;
         } catch(e) {
             console.error('Error loading menu from Firebase:', e);
         }
+    } else if (globalMenu && typeof globalMenu === 'object' && !Array.isArray(globalMenu)) {
+        globalMenu = Object.values(globalMenu);
     }
     if (globalMenu && globalMenu.length > 0) {
         allItems = globalMenu;

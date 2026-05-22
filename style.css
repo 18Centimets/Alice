@@ -138,7 +138,7 @@ h1,h2,h3{font-family:'Playfair Display',serif;}
 .modal-footer .price{font-size:1.5rem;}
 
 /* CART SIDEBAR */
-.sidebar{position:fixed;right:-420px;top:0;width:420px;height:100vh;background:#0f0f0f;border-left:1px solid var(--glass);z-index:3000;transition:var(--transition);padding:2rem;display:flex;flex-direction:column;}
+.sidebar{position:fixed;right:-420px;top:0;width:420px;height:100vh;height:100dvh;background:#0f0f0f;border-left:1px solid var(--glass);z-index:3000;transition:var(--transition);padding:2rem;display:flex;flex-direction:column;}
 .sidebar.active{right:0;}
 .sidebar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
 .sidebar-header h3{font-size:1.3rem;}
@@ -189,7 +189,7 @@ h1,h2,h3{font-family:'Playfair Display',serif;}
 .checkout-note input:focus{border-color:rgba(212,175,55,.5);}
 
 /* TABLE DETAIL PANEL */
-.table-panel{position:fixed;right:-400px;top:0;width:380px;height:100vh;background:#0f0f0f;border-left:1px solid var(--glass);z-index:2500;transition:var(--transition);padding:2rem;overflow-y:auto;display:flex;flex-direction:column;gap:1.2rem;}
+.table-panel{position:fixed;right:-400px;top:0;width:380px;height:100vh;height:100dvh;background:#0f0f0f;border-left:1px solid var(--glass);z-index:2500;transition:var(--transition);padding:2rem;overflow-y:auto;display:flex;flex-direction:column;gap:1.2rem;}
 .table-panel.open{right:0;}
 .panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2400;display:none;backdrop-filter:blur(2px);}
 .panel-backdrop.show{display:block;}
@@ -244,6 +244,36 @@ h1,h2,h3{font-family:'Playfair Display',serif;}
     .sidebar{width:100%;right:-100%;}
     .table-panel{width:100%;right:-100%;}
     .order-type-grid,.table-sel-zones{grid-template-columns:1fr;}
+    .modal-content, .checkout-modal-content { max-height: 90dvh; }
+}
+
+@media(max-width:600px){
+    .store-outline, .outdoor-outline { padding: 0.8rem; }
+    .tables-grid { gap: 0.4rem; }
+    .table-btn { font-size: 0.55rem; }
+    .table-btn .t-icon { font-size: 0.9rem; }
+    .table-btn .t-num { font-size: 0.5rem; }
+    .map-legend { flex-wrap: wrap; gap: 0.8rem; justify-content: center; }
+}
+
+@media(max-width:480px){
+    #floor-map, #menu { padding: 40px 1rem; }
+    .menu-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.2rem; }
+    .hero-content h1 { font-size: 2.2rem; }
+    .hero-cta { flex-direction: column; gap: 0.8rem; align-items: center; }
+    .btn { width: 100%; max-width: 280px; justify-content: center; }
+    .checkout-modal-content { padding: 1.5rem 1rem; }
+    .checkout-title { font-size: 1.5rem; }
+    .product-info { padding: 1.5rem 1rem; }
+    .product-info h2 { font-size: 1.5rem; }
+}
+
+@media(max-width:400px){
+    .store-outline, .outdoor-outline { padding: 0.5rem; }
+    .tables-grid { gap: 0.3rem; }
+    .table-btn { font-size: 0.5rem; }
+    .table-btn .t-icon { font-size: 0.8rem; }
+    .table-btn .t-num { font-size: 0.45rem; }
 }
 
 /* PAYMENT METHOD */
