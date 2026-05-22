@@ -78,6 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!checkAuth()) return;
     await loadMenuData();
     renderTable(allItems);
+
+    // Giải quyết triệt để lỗi Autofill của trình duyệt điền nhầm "superadmin" vào ô tìm kiếm thực đơn
+    if (searchInput) {
+        searchInput.value = '';
+        setTimeout(() => {
+            if (searchInput.value) {
+                searchInput.value = '';
+                filterTable();
+            }
+        }, 100);
+    }
     setupNavigation();
     setupForm();
     setupImageUpload();

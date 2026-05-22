@@ -12,6 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Bẫy tự động điền (Autofill Trap) để ngăn trình duyệt tự điền thông tin đăng nhập vào ô tìm kiếm -->
+    <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <input type="text" name="fake_username_remembered" autocomplete="username" tabindex="-1" />
+        <input type="password" name="fake_password_remembered" autocomplete="current-password" tabindex="-1" />
+    </div>
+
     <!-- Sidebar Navigation -->
     <aside id="admin-sidebar">
         <div class="sidebar-logo">
@@ -102,7 +108,7 @@
         <section id="page-menu-manager" class="page active">
             <div class="menu-table-wrap glass-card">
                 <div class="table-toolbar">
-                    <input type="text" id="search-input" placeholder="🔍 Tìm kiếm món..." class="search-input">
+                    <input type="text" id="search-input" placeholder="🔍 Tìm kiếm món..." class="search-input" autocomplete="off">
                     <select id="filter-category" class="filter-select">
                         <option value="all">Tất cả loại</option>
                         <option value="coffee">Cà Phê</option>
@@ -681,15 +687,15 @@
                         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom:1.5rem;">
                             <div class="form-group">
                                 <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Mật khẩu cũ</label>
-                                <input type="password" id="profile-input-old-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Nhập mật khẩu cũ">
+                                <input type="password" id="profile-input-old-pass" autocomplete="new-password" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Nhập mật khẩu cũ">
                             </div>
                             <div class="form-group">
                                 <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Mật khẩu mới</label>
-                                <input type="password" id="profile-input-new-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Từ 5-11 ký tự">
+                                <input type="password" id="profile-input-new-pass" autocomplete="new-password" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Từ 5-11 ký tự">
                             </div>
                             <div class="form-group">
                                 <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:5px;">Nhập lại mật khẩu mới</label>
-                                <input type="password" id="profile-input-confirm-pass" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Xác nhận mật khẩu">
+                                <input type="password" id="profile-input-confirm-pass" autocomplete="new-password" style="width:100%; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:#fff; border-radius:5px;" placeholder="Xác nhận mật khẩu">
                             </div>
                         </div>
                         <button id="btn-change-password" class="btn-action primary" onclick="changePassword()" style="width:100%; max-width:200px; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; background:var(--primary); color:#000;">Đổi Mật Khẩu</button>
