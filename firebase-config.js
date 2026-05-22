@@ -24,6 +24,7 @@ let globalExpenses = null;
 let globalLogs = null;
 let globalPermissions = null;
 let globalTables = null;
+let globalShifts = null;
 
 // Hàm Migrate dữ liệu từ LocalStorage lên Firebase (Chạy 1 lần đầu)
 async function migrateLocalData() {
@@ -64,9 +65,23 @@ async function migrateLocalData() {
     }
 }
 
+// Helper to convert Firebase Object to Array safely
+function firebaseValToArray(val) {
+    if (!val) return [];
+    if (typeof val === 'object' && !Array.isArray(val)) {
+        return Object.values(val);
+    }
+    return Array.isArray(val) ? val : [];
+}
+
 // REALTIME LISTENERS
 db.ref('menu').on('value', snap => {
-    globalMenu = snap.val() || null;
+    let val = snap.val();
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+        val = Object.values(val);
+    }
+    globalMenu = Array.isArray(val) ? val : null;
+    
     if (typeof allItems !== 'undefined' && typeof renderTable === 'function' && document.getElementById('menu-table-body')) {
         // Don't overwrite allItems while a save is in progress (prevents race condition)
         if (typeof _isSavingMenu === 'undefined' || !_isSavingMenu) {
@@ -83,17 +98,17 @@ db.ref('menu').on('value', snap => {
 });
 
 db.ref('revenue').on('value', snap => {
-    globalRevenue = snap.val() || [];
+    globalRevenue = firebaseValToArray(snap.val());
     if (typeof renderRevenuePage === 'function' && document.getElementById('rev-date-input')) renderRevenuePage();
 });
 
 db.ref('inventory').on('value', snap => {
-    globalInventory = snap.val() || [];
+    globalInventory = firebaseValToArray(snap.val());
     if (typeof renderInventoryTable === 'function' && document.getElementById('inv-table-body')) renderInventoryTable();
 });
 
 db.ref('inventory_export').on('value', snap => {
-    globalInventoryExport = snap.val() || [];
+    globalInventoryExport = firebaseValToArray(snap.val());
     if (typeof renderInventoryExportTable === 'function' && document.getElementById('inv-export-table-body')) {
         renderInventoryExportTable();
         if (typeof populateInvExportDropdown === 'function') populateInvExportDropdown();
@@ -101,12 +116,14 @@ db.ref('inventory_export').on('value', snap => {
 });
 
 db.ref('expenses').on('value', snap => {
-    globalExpenses = snap.val() || [];
+    globalExpenses = firebaseValToArray(snap.val());
     if (typeof renderExpenseList === 'function' && document.getElementById('exp-list')) renderExpenseList();
 });
 
 db.ref('logs').on('value', snap => {
-    globalLogs = snap.val() || [];
+    globalLogs = firebaseValToArray(snap.val());
+    // Sort logs descending by timestamp to keep recent logs on top
+    globalLogs.sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
     if (typeof renderLogs === 'function' && document.getElementById('log-table-body')) renderLogs();
 });
 
@@ -130,7 +147,7 @@ db.ref('tables').on('value', snap => {
 });
 // SHIFTS LISTENER
 db.ref('shifts').on('value', snap => {
-    globalShifts = snap.val() || [];
+    globalShifts = firebaseValToArray(snap.val());
     if (typeof updateShiftUI === 'function') updateShiftUI();
     if (typeof renderShifts === 'function') renderShifts();
 });

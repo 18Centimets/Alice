@@ -101,6 +101,13 @@ const SYSTEM_USERS = [
     { id:'admin',      password:'Admin@2024#', role:'admin',          name:'Quản Lý Quán' },
     { id:'user01',     password:'User@2024#',  role:'user',           name:'Nhân Viên Phục Vụ' }
 ];
+
+// Helper to get local date string YYYY-MM-DD
+function getLocalDateStr() {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
+}
+
 // If already logged in, redirect
 const s = sessionStorage.getItem('aura_session');
 if (s) {
@@ -164,12 +171,20 @@ async function doLogin() {
         loginBtn.innerText = 'Đang đồng bộ...';
         await migrateLocalData(); // Wait for data to be migrated if first time
 
-        // Write log
-        const logs = globalLogs || [];
-        logs.unshift({ id: Date.now(), userId: user.id, userName: user.name, role: user.role,
-            action: 'ĐĂNG NHẬP', detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
-            datetime: new Date().toLocaleString('vi-VN'), timestamp: Date.now() });
-        db.ref('logs').set(logs.slice(0, 500));
+        // Write log safely
+        const logId = Date.now();
+        const logRecord = {
+            id: logId,
+            userId: user.id,
+            userName: user.name,
+            role: user.role,
+            action: 'ĐĂNG NHẬP',
+            detail: `Đăng nhập thành công lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+            datetime: new Date().toLocaleString('vi-VN'),
+            dateStr: getLocalDateStr(),
+            timestamp: logId
+        };
+        await db.ref('logs/' + logId).set(logRecord);
         
         window.location.href = user.role === 'user' ? 'index.html' : 'admin.html';
     } catch (e) {

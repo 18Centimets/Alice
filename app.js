@@ -7,16 +7,34 @@ const TABLES_KEY  = 'aura_coffee_tables';
 const DB_VERSION  = 'v2'; // bump this to force-reset menu seed
 const SESSION_KEY = 'aura_session';
 
-function navLogout() {
+// Helper to get local date string YYYY-MM-DD
+function getLocalDateStr() {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
+}
+
+async function navLogout() {
     if (!confirm('Bạn có chắc muốn đăng xuất?')) return;
     // Write log entry before clearing session
     const sess = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
     if (sess) {
-        const logs = JSON.parse(localStorage.getItem('aura_coffee_logs') || '[]');
-        logs.unshift({ id: Date.now(), userId: sess.id, userName: sess.name, role: sess.role,
-            action: 'ĐĂNG XUẤT', detail: 'Đăng xuất từ trang POS lúc ' + new Date().toLocaleTimeString('vi-VN'),
-            datetime: new Date().toLocaleString('vi-VN'), date: new Date().toISOString().slice(0,10), timestamp: Date.now() });
-        db.ref("logs").set(logs.slice(0, 1000));
+        const logId = Date.now();
+        const logRecord = {
+            id: logId,
+            userId: sess.id,
+            userName: sess.name,
+            role: sess.role,
+            action: 'ĐĂNG XUẤT',
+            detail: 'Đăng xuất từ trang POS lúc ' + new Date().toLocaleTimeString('vi-VN'),
+            datetime: new Date().toLocaleString('vi-VN'),
+            dateStr: getLocalDateStr(),
+            timestamp: logId
+        };
+        try {
+            await db.ref("logs/" + logId).set(logRecord);
+        } catch(e) {
+            console.error("Lỗi ghi log đăng xuất:", e);
+        }
     }
     sessionStorage.removeItem(SESSION_KEY);
     window.location.href = 'login.html';
@@ -89,12 +107,8 @@ window.addEventListener('DOMContentLoaded', () => {
 //  DATA HELPERS
 // ============================================================
 function loadMenu() {
-    const storedVersion = localStorage.getItem(STORAGE_KEY + '_version');
-    if (storedVersion !== DB_VERSION) {
-        // New version — seed fresh data
-        db.ref("menu").set(defaultMenuData);
-        localStorage.setItem(STORAGE_KEY + '_version', DB_VERSION);
-        return defaultMenuData;
+    if (typeof globalMenu !== 'undefined' && globalMenu && globalMenu.length > 0) {
+        return globalMenu;
     }
     const s = localStorage.getItem(STORAGE_KEY);
     return s ? JSON.parse(s) : defaultMenuData;
@@ -102,14 +116,32 @@ function loadMenu() {
 function loadTables() {
     if (typeof globalTables !== 'undefined' && globalTables && Object.keys(globalTables).length > 0) return globalTables;
     const s = localStorage.getItem(TABLES_KEY);
-    if (s) return JSON.parse(s);
-    // Initialize 20 tables
-    const d = {};
-    for (let i = 1; i <= 10; i++) d[`indoor-${i}`]  = makeEmptyTable();
-    for (let i = 1; i <= 10; i++) d[`outdoor-${i}`] = makeEmptyTable();
+    let d = {};
+    if (s) {
+        d = JSON.parse(s);
+    } else {
+        // Initialize 20 tables
+        for (let i = 1; i <= 10; i++) d[`indoor-${i}`]  = makeEmptyTable();
+        for (let i = 1; i <= 10; i++) d[`outdoor-${i}`] = makeEmptyTable();
+    }
+    // Auto seed to Firebase if Firebase tables database is empty
+    if (typeof db !== 'undefined') {
+        db.ref("tables").once('value').then(snap => {
+            if (!snap.exists() || Object.keys(snap.val() || {}).length === 0) {
+                db.ref("tables").set(d);
+            }
+        }).catch(err => console.error("Lỗi đồng bộ bàn:", err));
+    }
     return d;
 }
-function saveTables() { db.ref("tables").set(tableData); }
+function saveTables() {
+    db.ref("tables").set(tableData);
+}
+function saveTable(key) {
+    if (tableData && tableData[key]) {
+        db.ref("tables/" + key).set(tableData[key]);
+    }
+}
 function makeEmptyTable() { return { orders:[], total:0, isServed:false, isPaid:false, time:null }; }
 function tableStatus(key) {
     const t = tableData[key];
@@ -180,7 +212,7 @@ function isUserCheckedIn() {
     if (user.role !== 'user') return true; // Admins are not restricted
 
     const shifts = globalShifts || [];
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = getLocalDateStr();
     const activeShift = shifts.find(s => s.userId === user.id && s.date === dateStr && !s.out);
     return !!activeShift;
 }
@@ -247,15 +279,17 @@ document.getElementById('close-table-panel').onclick = closeTablePanel;
 
 function markServed() {
     if (!activeTableKey) return;
+    if (!tableData[activeTableKey]) return;
     tableData[activeTableKey].isServed = true;
-    saveTables();
+    saveTable(activeTableKey);
     openTablePanel(activeTableKey, activeTableKey.split('-')[1], activeTableKey.split('-')[0]);
     showToast('✅ Đã đánh dấu ra món!');
 }
 function markPaid() {
     if (!activeTableKey) return;
+    if (!tableData[activeTableKey]) return;
     tableData[activeTableKey].isPaid = true;
-    saveTables();
+    saveTable(activeTableKey);
     updateTableBtn(activeTableKey);
     openTablePanel(activeTableKey, activeTableKey.split('-')[1], activeTableKey.split('-')[0]);
     showToast('💜 Đã thanh toán!');
@@ -263,7 +297,7 @@ function markPaid() {
 function clearTable() {
     if (!activeTableKey) return;
     tableData[activeTableKey] = makeEmptyTable();
-    saveTables();
+    saveTable(activeTableKey);
     updateTableBtn(activeTableKey);
     closeTablePanel();
     showToast('🧹 Đã dọn bàn!');
@@ -549,15 +583,19 @@ function confirmOrder() {
     const total = cart.reduce((a,c) => a + c.price * c.qty, 0);
     const note  = document.getElementById('order-note').value;
     const now   = new Date();
+    const localDate = getLocalDateStr();
 
     if (selectedOrderType === 'dine-in' && selectedTableKey) {
+        if (!tableData[selectedTableKey]) {
+            tableData[selectedTableKey] = makeEmptyTable();
+        }
         const t = tableData[selectedTableKey];
         t.orders = [...(t.orders || []), ...cart.map(i => ({ ...i }))];
         t.total  += total;
         t.isServed = false;
         t.paymentMethod = selectedPaymentMethod;
         t.time   = now.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
-        saveTables();
+        saveTable(selectedTableKey);
         updateTableBtn(selectedTableKey);
         showToast(`✅ Đã đặt món! ${document.getElementById('selected-table-badge').textContent}`);
     } else {
@@ -572,9 +610,9 @@ function confirmOrder() {
         tableKey: selectedTableKey || 'takeaway',
         items: cart.map(i => ({ title: i.title, qty: i.qty, price: i.price, size: i.selectedSize })),
         note,
-        date: now.toISOString().slice(0, 10),          // YYYY-MM-DD
-        month: now.toISOString().slice(0, 7),           // YYYY-MM
-        year: String(now.getFullYear()),
+        date: localDate,                                // YYYY-MM-DD (Local)
+        month: localDate.slice(0, 7),                   // YYYY-MM (Local)
+        year: localDate.slice(0, 4),
         time: now.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }),
         timestamp: now.getTime()
     };
@@ -586,9 +624,8 @@ function confirmOrder() {
     updateZoneCounts();
 }
 function saveRevenueRecord(record) {
-    const all = globalRevenue || [];
-    all.push({ id: Date.now(), ...record });
-    db.ref("revenue").set(all);
+    const recordId = 'rev_' + Date.now();
+    db.ref("revenue/" + recordId).set({ id: recordId, ...record });
 }
 
 // ============================================================
@@ -647,7 +684,8 @@ function mergeTable(targetKey) {
     // Clear source
     tableData[activeTableKey] = makeEmptyTable();
     
-    saveTables();
+    saveTable(activeTableKey);
+    saveTable(targetKey);
     updateTableBtn(activeTableKey);
     updateTableBtn(targetKey);
     closeMergeModal();
@@ -715,7 +753,7 @@ function printTableBill() {
 function getShiftId() {
     const user = JSON.parse(sessionStorage.getItem('aura_session'));
     if (!user) return null;
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = getLocalDateStr();
     return user.id + '_' + dateStr;
 }
 
@@ -743,18 +781,19 @@ function updateShiftUI() {
 function checkIn() {
     const user = JSON.parse(sessionStorage.getItem('aura_session'));
     if (!user) return;
-    const shifts = globalShifts || [];
+    const localDate = getLocalDateStr();
+    const shiftId = 'shift_' + Date.now() + '_' + user.id;
     
-    shifts.push({
-        id: 'shift_' + Date.now(),
+    const shiftRecord = {
+        id: shiftId,
         userId: user.id,
         userName: user.name,
-        date: new Date().toISOString().slice(0,10),
+        date: localDate,
         in: new Date().getTime(),
         out: null
-    });
+    };
     
-    db.ref('shifts').set(shifts);
+    db.ref('shifts/' + shiftId).set(shiftRecord);
     showToast('✅ Đã bắt đầu ca làm việc!');
 }
 
@@ -762,12 +801,11 @@ function checkOut() {
     const user = JSON.parse(sessionStorage.getItem('aura_session'));
     if (!user) return;
     const shifts = globalShifts || [];
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = getLocalDateStr();
     
     const activeShift = shifts.find(s => s.userId === user.id && s.date === dateStr && !s.out);
     if (activeShift) {
-        activeShift.out = new Date().getTime();
-        db.ref('shifts').set(shifts);
+        db.ref('shifts/' + activeShift.id + '/out').set(new Date().getTime());
         showToast('✅ Đã kết thúc ca làm việc!');
     }
 }

@@ -36,6 +36,12 @@ const CUSTOM_PERMS_KEY = 'aura_coffee_custom_perms';
 const ROLE_LABELS = { administrator:'👑 Administrator', admin:'🛡️ Admin', user:'👤 Nhân Viên' };
 let currentUser = null;
 
+function getLocalDateStr() {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
+}
+
+
 // Default menu (in case localStorage is empty)
 const defaultMenu = [
     { id: 1, title: "Gold Leaf Latte", category: "coffee", prices: { S: 70000, M: 85000, L: 100000 }, img: "assets/latte.png", desc: "Sự kết hợp hoàn hảo giữa hạt Arabica thượng hạng và lớp bọt sữa mịn màng, điểm xuyết vàng lá 24k tinh xảo." },
@@ -82,9 +88,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyPermissions();
     showUserBadge();
     const expDate = document.getElementById('exp-date');
-    if (expDate) expDate.value = new Date().toISOString().slice(0,10);
+    if (expDate) expDate.value = getLocalDateStr();
     const expMonth = document.getElementById('exp-filter-month');
-    if (expMonth) expMonth.value = new Date().toISOString().slice(0,7);
+    if (expMonth) expMonth.value = getLocalDateStr().slice(0,7);
     writeLog('MỞ TRANG', 'Mở trang quản lý Admin Panel');
     // User role: auto redirect to expenses page (their only page)
     if (currentUser && currentUser.role === 'user') {
@@ -119,13 +125,23 @@ async function loadMenuData() {
     }
 }
 
-function saveMenuData() {
+function saveMenuData(item) {
     _isSavingMenu = true;
-    db.ref("menu").set(allItems).then(() => {
-        _isSavingMenu = false;
-    }).catch(() => {
-        _isSavingMenu = false;
-    });
+    if (item && item.id) {
+        db.ref("menu/" + item.id).set(item).then(() => {
+            _isSavingMenu = false;
+        }).catch(() => {
+            _isSavingMenu = false;
+        });
+    } else {
+        // Seed all items individually
+        const promises = allItems.map(i => db.ref("menu/" + i.id).set(i));
+        Promise.all(promises).then(() => {
+            _isSavingMenu = false;
+        }).catch(() => {
+            _isSavingMenu = false;
+        });
+    }
 }
 
 function getNextId() {
@@ -256,12 +272,12 @@ function switchPage(pageId) {
     pageTitle.textContent = titles[pageId] || 'Admin';
     if (pageId==='revenue') {
         const i=document.getElementById('rev-date-input');
-        if(!i.value){i.type='date';i.value=new Date().toISOString().slice(0,10);}
+        if(!i.value){i.type='date';i.value=getLocalDateStr();}
         const tabs = document.querySelector('.rev-period-tabs');
         if (tabs) tabs.style.display = (currentUser && currentUser.role === 'user') ? 'none' : 'flex';
         if (currentUser && currentUser.role === 'user') {
             pageTitle.textContent = 'Doanh Thu Hàng Ngày';
-            i.value = new Date().toISOString().slice(0,10);
+            i.value = getLocalDateStr();
             i.disabled = true;
             i.style.opacity = '0.7';
             setRevPeriod('day');
@@ -273,15 +289,15 @@ function switchPage(pageId) {
     }
     if (pageId==='inventory') renderInventoryTable();
     if (pageId==='inv-export') {
-        const d=document.getElementById('inv-export-date'); if(d&&!d.value) d.value=new Date().toISOString().slice(0,10);
+        const d=document.getElementById('inv-export-date'); if(d&&!d.value) d.value=getLocalDateStr();
         populateInvExportDropdown();
         renderInventoryExportTable();
     }
     if (pageId==='expenses')  renderExpenseList();
-    if (pageId==='summary')   { const i=document.getElementById('sum-date-input'); if(!i.value) i.value=new Date().toISOString().slice(0,10); renderSummaryPage(); }
+    if (pageId==='summary')   { const i=document.getElementById('sum-date-input'); if(!i.value) i.value=getLocalDateStr(); renderSummaryPage(); }
     if (pageId==='logs')      renderLogs();
     if (pageId==='users')     renderUsersPage();
-    writeLog('XEM TRANG', `Chuy\u1ec3n sang: ${titles[pageId]||pageId}`);
+    writeLog('XEM TRANG', `Chuyển sang: ${titles[pageId]||pageId}`);
 }
 
 // ==========================================
@@ -316,16 +332,17 @@ function handleFormSubmit(e) {
         const idx = allItems.findIndex(i => i.id === parseInt(editId));
         if (idx > -1) {
             allItems[idx] = { ...allItems[idx], ...itemData };
+            saveMenuData(allItems[idx]);
             showToast('✅ Đã cập nhật món thành công!', 'success');
         }
     } else {
         // Add new
         itemData.id = getNextId();
         allItems.push(itemData);
+        saveMenuData(itemData);
         showToast('✅ Đã thêm món mới vào thực đơn!', 'success');
     }
 
-    saveMenuData();
     updateCount();
     resetForm();
     setTimeout(() => switchPage('menu-manager'), 300);
@@ -531,8 +548,9 @@ function promptDelete(id) {
     document.getElementById('confirm-modal').style.display = 'flex';
     
     document.getElementById('confirm-delete-btn').onclick = () => {
-        allItems = allItems.filter(i => i.id !== deleteTargetId);
-        saveMenuData();
+        const targetId = deleteTargetId;
+        allItems = allItems.filter(i => i.id !== targetId);
+        db.ref("menu/" + targetId).remove();
         updateCount();
         filterTable();
         closeConfirm();
@@ -569,7 +587,7 @@ function setRevPeriod(period) {
     document.querySelector(`.rev-tab[data-period="${period}"]`).classList.add('active');
 
     const input = document.getElementById('rev-date-input');
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateStr();
     if (period === 'day')   input.type = 'date',  input.value = today;
     if (period === 'month') input.type = 'month', input.value = today.slice(0, 7);
     if (period === 'year')  input.type = 'number', input.value = new Date().getFullYear();
@@ -642,37 +660,51 @@ function renderRevenuePage() {
 let expImageDataURL = '';
 
 function loadInventory() { return globalInventory || []; }
-function saveInventoryData(d) { db.ref("inventory").set(d); }
 
 function addInventoryItem() {
     const name = document.getElementById('inv-name').value.trim();
     if (!name) { showToast('Vui lòng nhập tên vật tư', 'error'); return; }
-    const inv = loadInventory();
-    inv.push({
-        id: Date.now(),
+    const itemId = Date.now();
+    const itemData = {
+        id: itemId,
         name,
         unit:      document.getElementById('inv-unit').value.trim(),
         qty:       parseFloat(document.getElementById('inv-qty').value) || 0,
         threshold: parseFloat(document.getElementById('inv-threshold').value) || 0,
         note:      document.getElementById('inv-note').value.trim()
-    });
-    saveInventoryData(inv);
+    };
+    db.ref("inventory/" + itemId).set(itemData);
     ['inv-name','inv-unit','inv-qty','inv-threshold','inv-note'].forEach(id => document.getElementById(id).value = '');
     renderInventoryTable();
     showToast('✅ Đã thêm vật tư!');
 }
 function deleteInventoryItemByName(name) {
     if(!confirm(`Xóa toàn bộ dữ liệu của vật tư "${name}"?`)) return;
-    saveInventoryData(loadInventory().filter(i => i.name.trim() !== name));
-    var exports = (globalInventoryExport || []);
-    db.ref("inventory_export").set(exports.filter(e => e.name.trim() !== name));
+    const targetName = name.trim();
+    
+    // Delete from inventory
+    const invList = loadInventory();
+    invList.forEach(i => {
+        if (i.name.trim() === targetName) {
+            db.ref("inventory/" + i.id).remove();
+        }
+    });
+
+    // Delete from inventory_export
+    const exportRecords = (globalInventoryExport || []);
+    exportRecords.forEach(e => {
+        if (e.name.trim() === targetName) {
+            db.ref("inventory_export/" + e.id).remove();
+        }
+    });
+
     writeLog('XÓA VẬT TƯ', `Đã xóa vật tư: ${name}`);
     renderInventoryTable();
 }
 
 function getAggregatedInventory() {
     const imports = loadInventory();
-    const exports = (globalInventoryExport || []);
+    const exportRecords = (globalInventoryExport || []);
     const aggMap = {};
     imports.forEach(i => {
         const name = i.name.trim();
@@ -682,7 +714,7 @@ function getAggregatedInventory() {
         aggMap[name].totalImport += (parseFloat(i.qty) || 0);
         if (i.threshold > 0) aggMap[name].threshold = i.threshold;
     });
-    exports.forEach(e => {
+    exportRecords.forEach(e => {
         const name = e.name.trim();
         if (aggMap[name]) aggMap[name].totalExport += (parseFloat(e.qty) || 0);
     });
@@ -744,17 +776,21 @@ function parseExcelFile(file) {
             const wb   = XLSX.read(e.target.result, { type: 'array' });
             const ws   = wb.Sheets[wb.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-            const inv  = loadInventory(); let added = 0;
+            let added = 0;
             rows.forEach(row => {
                 const name = (row['Tên vật tư']||row['ten_vat_tu']||row['Name']||row['name']||'').toString().trim();
                 if (!name) return;
-                inv.push({ id: Date.now()+added++, name,
+                const itemId = Date.now() + added++;
+                const itemData = {
+                    id: itemId, name,
                     unit:      (row['Đơn vị']||row['Unit']||'').toString(),
                     qty:       parseFloat(row['Số lượng']||row['Qty']||0),
                     threshold: parseFloat(row['Ngưỡng cảnh báo']||row['Threshold']||0),
-                    note:      (row['Ghi chú']||row['Note']||'').toString() });
+                    note:      (row['Ghi chú']||row['Note']||'').toString()
+                };
+                db.ref("inventory/" + itemId).set(itemData);
             });
-            saveInventoryData(inv); renderInventoryTable();
+            renderInventoryTable();
             showToast(`✅ Đã import ${added} vật tư từ Excel!`);
         } catch(err) { showToast('❌ Lỗi đọc file: ' + err.message, 'error'); }
     };
@@ -783,14 +819,14 @@ function addInventoryExport() {
         return;
     }
 
-    const exports = (globalInventoryExport || []);
-    exports.push({
-        id: Date.now(),
+    const recordId = Date.now();
+    const exportRecord = {
+        id: recordId,
         name, qty, date, note,
         user: currentUser ? currentUser.name : 'Unknown',
         timestamp: Date.now()
-    });
-    db.ref("inventory_export").set(exports);
+    };
+    db.ref("inventory_export/" + recordId).set(exportRecord);
     writeLog('XUẤT KHO', `Đã xuất ${qty} ${name}. Ghi chú: ${note}`);
     
     document.getElementById('inv-export-qty').value = '';
@@ -802,13 +838,13 @@ function addInventoryExport() {
 }
 
 function renderInventoryExportTable() {
-    const exports = (globalInventoryExport || []).sort((a,b) => b.timestamp - a.timestamp);
+    const exportRecords = (globalInventoryExport || []).sort((a,b) => b.timestamp - a.timestamp);
     const tbody = document.getElementById('inv-export-table-body');
     const table = document.getElementById('inv-export-table');
     const empty = document.getElementById('inv-export-empty');
     if (!tbody) return;
 
-    if (!exports.length) {
+    if (!exportRecords.length) {
         table.style.display = 'none';
         empty.style.display = 'flex';
         return;
@@ -816,7 +852,7 @@ function renderInventoryExportTable() {
     table.style.display = 'table';
     empty.style.display = 'none';
 
-    tbody.innerHTML = exports.map(e => `<tr>
+    tbody.innerHTML = exportRecords.map(e => `<tr>
         <td style="white-space:nowrap">${new Date(e.timestamp).toLocaleString('vi-VN')}</td>
         <td><strong>${e.user}</strong></td>
         <td style="color:var(--primary);font-weight:600">${e.name}</td>
@@ -829,7 +865,6 @@ function renderInventoryExportTable() {
 //  EXPENSES (Chi vận hành)
 // ==========================================
 function loadExpenses() { return globalExpenses || []; }
-function saveExpensesData(d) { db.ref("expenses").set(d); }
 
 function saveExpense() {
     const name   = document.getElementById('exp-name').value.trim();
@@ -840,12 +875,15 @@ function saveExpense() {
     if (!name)    { showToast('Vui lòng nhập tên hàng hóa', 'error');  return; }
     if (!date)    { showToast('Vui lòng chọn ngày chi', 'error');       return; }
     if (unit <= 0){ showToast('Vui lòng nhập đơn giá hợp lệ', 'error');return; }
-    const exps = loadExpenses();
-    exps.push({ id: Date.now(), name, qty, unitPrice: unit, amount: unit * qty, note,
+    
+    const recordId = Date.now();
+    const expenseItem = {
+        id: recordId, name, qty, unitPrice: unit, amount: unit * qty, note,
         img: expImageDataURL, date, month: date.slice(0,7),
         year: date.slice(0,4), timestamp: Date.now(),
-        time: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) });
-    saveExpensesData(exps);
+        time: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})
+    };
+    db.ref("expenses/" + recordId).set(expenseItem);
     resetExpenseForm();
     renderExpenseList();
     showToast('✅ Đã lưu khoản chi!');
@@ -853,7 +891,7 @@ function saveExpense() {
 function resetExpenseForm() {
     ['exp-name','exp-qty','exp-amount','exp-note'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('exp-qty').value = 1;
-    document.getElementById('exp-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('exp-date').value = getLocalDateStr();
     clearExpImage();
 }
 function clearExpImage() {
@@ -887,7 +925,7 @@ function loadExpImage(file) {
     reader.readAsDataURL(file);
 }
 function deleteExpense(id) {
-    saveExpensesData(loadExpenses().filter(e => e.id !== id));
+    db.ref("expenses/" + id).remove();
     renderExpenseList();
 }
 function renderExpenseList() {
@@ -927,7 +965,7 @@ function setSumPeriod(period) {
     document.querySelectorAll('.sum-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`.sum-tab[data-period="${period}"]`).classList.add('active');
     const inp = document.getElementById('sum-date-input');
-    const today = new Date().toISOString().slice(0,10);
+    const today = getLocalDateStr();
     if (period === 'day')  { inp.type = 'date';   inp.value = today; }
     if (period === 'month'){ inp.type = 'month';  inp.value = today.slice(0,7); }
     if (period === 'year') { inp.type = 'number'; inp.value = new Date().getFullYear(); }
@@ -1024,9 +1062,9 @@ function showUserBadge() {
         if (navRev) navRev.innerHTML = '💰 Doanh Thu Hàng Ngày';
     }
 }
-function doLogout() {
+async function doLogout() {
     if (!confirm('Ban co chac muon dang xuat?')) return;
-    writeLog('DANG XUAT', 'Dang xuat khoi he thong luc ' + new Date().toLocaleTimeString('vi-VN'));
+    await writeLog('DANG XUAT', 'Dang xuat khoi he thong luc ' + new Date().toLocaleTimeString('vi-VN'));
     sessionStorage.removeItem(SESSION_KEY);
     window.location.href = 'login.html';
 }
@@ -1034,20 +1072,24 @@ function doLogout() {
 // ==========================================
 //  ACTIVITY LOG
 // ==========================================
-function writeLog(action, detail) {
+async function writeLog(action, detail) {
     if (!currentUser) return;
-    var logs = globalLogs || [];
-    logs.unshift({
-        id: Date.now(), userId: currentUser.id, userName: currentUser.name,
+    const recordId = Date.now();
+    const logRecord = {
+        id: recordId, userId: currentUser.id, userName: currentUser.name,
         role: currentUser.role, action: action, detail: detail,
         datetime: new Date().toLocaleString('vi-VN'),
-        date: new Date().toISOString().slice(0,10),
+        date: getLocalDateStr(),
         timestamp: Date.now()
-    });
-    db.ref("logs").set(logs.slice(0, 1000));
+    };
+    try {
+        await db.ref("logs/log_" + recordId).set(logRecord);
+    } catch (err) {
+        console.error("Failed to write log:", err);
+    }
 }
 function renderLogs() {
-    var logs     = globalLogs || [];
+    var logs     = (globalLogs || []).slice().sort((a,b) => b.timestamp - a.timestamp);
     var q        = (document.getElementById('log-search') ? document.getElementById('log-search').value : '').toLowerCase();
     var role     = document.getElementById('log-role-filter') ? document.getElementById('log-role-filter').value : 'all';
     var date     = document.getElementById('log-date-filter') ? document.getElementById('log-date-filter').value : '';
@@ -1075,7 +1117,7 @@ function renderLogs() {
 }
 function clearLogs() {
     if (!confirm('Xoa toan bo nhat ky? Khong the hoan tac.')) return;
-    db.ref("logs").set([]);
+    db.ref("logs").remove();
     renderLogs();
     showToast('Da xoa nhat ky!');
 }
@@ -1138,11 +1180,11 @@ function renderUsersPage() {
 
 function toggleCustomPerm(userId, pageId) {
     var custom = globalPermissions || {};
-    if (!custom[userId]) custom[userId] = [];
-    var idx = custom[userId].indexOf(pageId);
-    if (idx !== -1) custom[userId].splice(idx, 1);
-    else custom[userId].push(pageId);
-    db.ref("permissions").set(custom);
+    var userPerms = (custom[userId] || []).slice();
+    var idx = userPerms.indexOf(pageId);
+    if (idx !== -1) userPerms.splice(idx, 1);
+    else userPerms.push(pageId);
+    db.ref("permissions/" + userId).set(userPerms);
     writeLog('CẤP QUYỀN', 'Cập nhật quyền [' + pageId + '] cho tài khoản ' + userId);
     renderUsersPage();
     showToast('✅ Đã cập nhật quyền!');
@@ -1170,8 +1212,8 @@ function createNewUser() {
         return;
     }
     
-    users.push({ id, name, role, password: pass, isSuspended: false });
-    db.ref('users').set(users);
+    const newUser = { id, name, role, password: pass, isSuspended: false };
+    db.ref('users/' + id).set(newUser);
     
     writeLog('TẠO TÀI KHOẢN', 'Tạo tài khoản mới: ' + id);
     showToast('✅ Đã tạo tài khoản thành công!');
@@ -1183,13 +1225,13 @@ function createNewUser() {
 
 function toggleSuspendUser(targetId) {
     let users = globalUsers || [];
-    const userIndex = users.findIndex(u => u.id === targetId);
-    if (userIndex === -1) return;
+    const u = users.find(u => u.id === targetId);
+    if (!u) return;
     
-    users[userIndex].isSuspended = !users[userIndex].isSuspended;
-    db.ref('users').set(users);
+    const newStatus = !u.isSuspended;
+    db.ref('users/' + targetId + '/isSuspended').set(newStatus);
     
-    const act = users[userIndex].isSuspended ? 'Khóa' : 'Mở khóa';
+    const act = newStatus ? 'Khóa' : 'Mở khóa';
     writeLog('TRẠNG THÁI TÀI KHOẢN', act + ' tài khoản ' + targetId);
     showToast(`✅ Đã ${act.toLowerCase()} tài khoản!`);
 }
@@ -1197,9 +1239,8 @@ function toggleSuspendUser(targetId) {
 function deleteUser(targetId) {
     if (!confirm(`Bạn có CHẮC CHẮN muốn thu hồi (xóa) tài khoản ${targetId} vĩnh viễn?`)) return;
     
-    let users = globalUsers || [];
-    users = users.filter(u => u.id !== targetId);
-    db.ref('users').set(users);
+    db.ref('users/' + targetId).remove();
+    db.ref('permissions/' + targetId).remove();
     
     writeLog('XÓA TÀI KHOẢN', 'Đã thu hồi tài khoản ' + targetId);
     showToast('✅ Đã xóa tài khoản!');
@@ -1373,20 +1414,19 @@ function changePassword() {
     }
     
     const users = globalUsers || [];
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    const u = users.find(u => u.id === currentUser.id);
     
-    if (userIndex === -1) {
+    if (!u) {
         showToast('❌ Lỗi: Không tìm thấy tài khoản!', 'error');
         return;
     }
     
-    if (users[userIndex].password !== oldPass) {
+    if (u.password !== oldPass) {
         showToast('❌ Mật khẩu cũ không chính xác!', 'error');
         return;
     }
     
-    users[userIndex].password = newPass;
-    db.ref('users').set(users);
+    db.ref('users/' + currentUser.id + '/password').set(newPass);
     showToast('✅ Đổi mật khẩu thành công!');
     
     document.getElementById('profile-input-old-pass').value = '';
@@ -1444,7 +1484,7 @@ function updateAdminShiftUI(targetId = null) {
     const statusTxt = document.getElementById('profile-shift-today');
     if (!btnIn || !btnOut || !targetId) return;
     
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = getLocalDateStr();
     const shifts = globalShifts || [];
     const activeShift = shifts.find(s => s.userId === targetId && s.date === dateStr && !s.out);
     
@@ -1475,27 +1515,26 @@ function updateAdminShiftUI(targetId = null) {
 
 function checkIn() {
     if (!currentUser) return;
-    const shifts = globalShifts || [];
-    shifts.push({
-        id: 'shift_' + Date.now(),
+    const shiftId = 'shift_' + Date.now();
+    const newShift = {
+        id: shiftId,
         userId: currentUser.id,
         userName: currentUser.name,
-        date: new Date().toISOString().slice(0,10),
-        in: new Date().getTime(),
+        date: getLocalDateStr(),
+        in: Date.now(),
         out: null
-    });
-    db.ref('shifts').set(shifts);
+    };
+    db.ref('shifts/' + shiftId).set(newShift);
     showToast('✅ Đã bắt đầu ca làm việc!');
 }
 
 function checkOut() {
     if (!currentUser) return;
     const shifts = globalShifts || [];
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = getLocalDateStr();
     const activeShift = shifts.find(s => s.userId === currentUser.id && s.date === dateStr && !s.out);
     if (activeShift) {
-        activeShift.out = new Date().getTime();
-        db.ref('shifts').set(shifts);
+        db.ref('shifts/' + activeShift.id + '/out').set(Date.now());
         showToast('✅ Đã kết thúc ca làm việc!');
     }
 }
