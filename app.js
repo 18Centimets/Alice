@@ -296,11 +296,28 @@ function markPaid() {
 }
 function clearTable() {
     if (!activeTableKey) return;
+    const t = tableData[activeTableKey];
+    
+    // Kiểm tra an toàn xem có order hay không (phòng trường hợp Firebase trả về dạng Object thay vì Array)
+    const hasOrders = t && t.orders && Object.keys(t.orders).length > 0;
+    
+    if (hasOrders && !t.isPaid) {
+        showToast('❌ Bắt buộc phải thanh toán trước khi dọn bàn!');
+        // Rung nhẹ panel để báo lỗi (thêm class error-shake nếu cần)
+        return;
+    }
+    
+    if (hasOrders && t.isPaid) {
+        if (!confirm('Bàn đã thanh toán. Bạn có chắc chắn muốn dọn bàn này về trạng thái trống?')) {
+            return;
+        }
+    }
+
     tableData[activeTableKey] = makeEmptyTable();
     saveTable(activeTableKey);
     updateTableBtn(activeTableKey);
     closeTablePanel();
-    showToast('🧹 Đã dọn bàn!');
+    showToast('🧹 Đã dọn bàn thành công!');
 }
 
 // ============================================================
