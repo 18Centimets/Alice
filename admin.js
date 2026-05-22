@@ -1185,6 +1185,33 @@ function clearLogs() {
 function renderUsersPage() {
     var tbody = document.getElementById('users-table-body');
     if (!tbody) return;
+
+    // Phân quyền lớp UI động: hiển thị form tạo tài khoản & cập nhật tùy chọn vai trò
+    var addSection = document.getElementById('add-user-section');
+    if (addSection) {
+        if (currentUser && currentUser.role === 'administrator') {
+            addSection.style.display = 'block';
+            var roleSelect = document.getElementById('new-user-role');
+            if (roleSelect) {
+                roleSelect.innerHTML = `
+                    <option value="admin">Quản Lý Quán (Admin)</option>
+                    <option value="user" selected>Nhân Viên Phục Vụ (User)</option>
+                `;
+            }
+        } else if (currentUser && currentUser.role === 'admin') {
+            addSection.style.display = 'block';
+            var roleSelect = document.getElementById('new-user-role');
+            if (roleSelect) {
+                roleSelect.innerHTML = `
+                    <option value="user" selected>Nhân Viên Phục Vụ (User)</option>
+                `;
+            }
+        } else {
+            // Tài khoản User hoặc vai trò khác không được phép tạo tài khoản nào
+            addSection.style.display = 'none';
+        }
+    }
+
     var isAdmin = currentUser && currentUser.role === 'administrator';
     var roleCls = { administrator:'cat-pastry', admin:'cat-smoothie', user:'cat-coffee' };
     var custom  = globalPermissions || {};
@@ -1248,10 +1275,31 @@ function toggleCustomPerm(userId, pageId) {
 }
 
 function createNewUser() {
+    if (!currentUser) {
+        showToast('❌ Bạn chưa đăng nhập!', 'error');
+        return;
+    }
+
     const id = document.getElementById('new-user-id').value.trim();
     const name = document.getElementById('new-user-name').value.trim();
     const role = document.getElementById('new-user-role').value;
     const pass = document.getElementById('new-user-pass').value;
+    
+    // JS-level strict role gatekeeping
+    if (currentUser.role === 'administrator') {
+        if (role !== 'admin' && role !== 'user') {
+            showToast('❌ Tài khoản Administrator chỉ được quyền tạo tài khoản Admin và User!', 'error');
+            return;
+        }
+    } else if (currentUser.role === 'admin') {
+        if (role !== 'user') {
+            showToast('❌ Tài khoản Admin chỉ được quyền tạo tài khoản User!', 'error');
+            return;
+        }
+    } else {
+        showToast('❌ Tài khoản của bạn không được phép tạo tài khoản mới!', 'error');
+        return;
+    }
     
     if (!id || !name || !pass) {
         showToast('❌ Vui lòng nhập đầy đủ ID, Tên và Mật khẩu!', 'error');
@@ -1272,7 +1320,7 @@ function createNewUser() {
     const newUser = { id, name, role, password: pass, isSuspended: false };
     db.ref('users/' + id).set(newUser);
     
-    writeLog('TẠO TÀI KHOẢN', 'Tạo tài khoản mới: ' + id);
+    writeLog('TẠO TÀI KHOẢN', 'Tạo tài khoản mới: ' + id + ' với vai trò: ' + role);
     showToast('✅ Đã tạo tài khoản thành công!');
     
     document.getElementById('new-user-id').value = '';
@@ -1281,6 +1329,11 @@ function createNewUser() {
 }
 
 function toggleSuspendUser(targetId) {
+    if (!currentUser || currentUser.role !== 'administrator') {
+        showToast('❌ Bạn không có quyền thực hiện thao tác quản trị này!', 'error');
+        return;
+    }
+
     let users = globalUsers || [];
     const u = users.find(u => u.id === targetId);
     if (!u) return;
@@ -1294,6 +1347,11 @@ function toggleSuspendUser(targetId) {
 }
 
 function deleteUser(targetId) {
+    if (!currentUser || currentUser.role !== 'administrator') {
+        showToast('❌ Bạn không có quyền thực hiện thao tác quản trị này!', 'error');
+        return;
+    }
+
     if (!confirm(`Bạn có CHẮC CHẮN muốn thu hồi (xóa) tài khoản ${targetId} vĩnh viễn?`)) return;
     
     db.ref('users/' + targetId).remove();
