@@ -826,3 +826,182 @@ function checkOut() {
         showToast('✅ Đã kết thúc ca làm việc!');
     }
 }
+
+// ============================================================
+//  AI CHAT (Gemini Integration)
+// ============================================================
+let aiChatHistory = []; // [{role:'user'|'model', parts:[{text:'...'}]}]
+let aiIsProcessing = false;
+
+function toggleAIPanel() {
+    const panel = document.getElementById('ai-panel');
+    const fab = document.getElementById('ai-fab');
+    const isOpen = panel.classList.contains('open');
+    
+    if (isOpen) {
+        panel.classList.remove('open');
+        fab.classList.remove('active');
+    } else {
+        // Close cart sidebar if open (avoid overlap)
+        document.getElementById('cart-sidebar').classList.remove('active');
+        panel.classList.add('open');
+        fab.classList.add('active');
+        document.getElementById('ai-input').focus();
+        scrollAIToBottom();
+        // Restore chat history from session
+        restoreAIChatFromSession();
+    }
+}
+
+async function sendAIMessage() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text || aiIsProcessing) return;
+
+    // Render user message
+    appendMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Hide suggestions after first message
+    const sugEl = document.getElementById('ai-suggestions');
+    if (sugEl) sugEl.style.display = 'none';
+
+    // Add to history
+    aiChatHistory.push({ role: 'user', parts: [{ text }] });
+
+    // Limit context to last 10 messages
+    const contextHistory = aiChatHistory.slice(-10);
+
+    // Show typing
+    aiIsProcessing = true;
+    document.getElementById('ai-send').disabled = true;
+    showAITyping();
+
+    try {
+        const response = await callGeminiAPI(contextHistory);
+        hideAITyping();
+        appendMessage('ai', response);
+        aiChatHistory.push({ role: 'model', parts: [{ text: response }] });
+        saveAIChatToSession();
+    } catch (err) {
+        hideAITyping();
+        appendMessage('ai', '❌ Đã xảy ra lỗi. Vui lòng thử lại.');
+        console.error('AI Error:', err);
+    } finally {
+        aiIsProcessing = false;
+        document.getElementById('ai-send').disabled = false;
+    }
+}
+
+function handleQuickSuggestion(text) {
+    document.getElementById('ai-input').value = text;
+    sendAIMessage();
+}
+
+function appendMessage(role, text) {
+    const container = document.getElementById('ai-messages');
+    const div = document.createElement('div');
+    div.className = `ai-msg ${role}`;
+    
+    if (role === 'ai') {
+        // Simple markdown rendering
+        div.innerHTML = renderSimpleMarkdown(text);
+    } else {
+        div.textContent = text;
+    }
+    
+    container.appendChild(div);
+    scrollAIToBottom();
+}
+
+function renderSimpleMarkdown(text) {
+    return text
+        // Code blocks (must be before inline code)
+        .replace(/```[\s\S]*?```/g, m => `<code>${m.slice(3,-3).trim()}</code>`)
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Unordered lists
+        .replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>')
+        // Ordered lists  
+        .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+        // Wrap consecutive <li> in <ul>
+        .replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>')
+        // Line breaks
+        .replace(/\n/g, '<br>');
+}
+
+function showAITyping() {
+    const container = document.getElementById('ai-messages');
+    const typing = document.createElement('div');
+    typing.className = 'ai-typing';
+    typing.id = 'ai-typing-indicator';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    container.appendChild(typing);
+    scrollAIToBottom();
+}
+
+function hideAITyping() {
+    const el = document.getElementById('ai-typing-indicator');
+    if (el) el.remove();
+}
+
+function scrollAIToBottom() {
+    const container = document.getElementById('ai-messages');
+    if (container) {
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+        });
+    }
+}
+
+// Save/restore chat within session
+function saveAIChatToSession() {
+    try {
+        sessionStorage.setItem('ai_chat_history', JSON.stringify(aiChatHistory));
+    } catch(e) { /* quota exceeded — ignore */ }
+}
+
+function restoreAIChatFromSession() {
+    if (aiChatHistory.length > 0) return; // already loaded
+    try {
+        const saved = sessionStorage.getItem('ai_chat_history');
+        if (saved) {
+            aiChatHistory = JSON.parse(saved);
+            const container = document.getElementById('ai-messages');
+            // Don't re-render if already has messages beyond the welcome
+            if (container.children.length > 1) return;
+            aiChatHistory.forEach(msg => {
+                const role = msg.role === 'user' ? 'user' : 'ai';
+                const text = msg.parts[0].text;
+                appendMessage(role, text);
+            });
+            // Hide suggestions if there's history
+            if (aiChatHistory.length > 0) {
+                const sugEl = document.getElementById('ai-suggestions');
+                if (sugEl) sugEl.style.display = 'none';
+            }
+        }
+    } catch(e) { /* parse error — ignore */ }
+}
+
+// Enter to send, Shift+Enter for new line
+document.addEventListener('DOMContentLoaded', () => {
+    const aiInput = document.getElementById('ai-input');
+    if (aiInput) {
+        aiInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendAIMessage();
+            }
+        });
+        // Auto-resize textarea
+        aiInput.addEventListener('input', () => {
+            aiInput.style.height = 'auto';
+            aiInput.style.height = Math.min(aiInput.scrollHeight, 100) + 'px';
+        });
+    }
+});
+

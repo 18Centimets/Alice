@@ -370,6 +370,36 @@
     <!-- ===== SUCCESS TOAST ===== -->
     <div id="order-toast" class="order-toast"></div>
 
+    <!-- ===== AI CHAT ===== -->
+    <button id="ai-fab" onclick="toggleAIPanel()" title="Trợ Lý AI">🤖</button>
+    <div id="ai-panel" class="ai-panel">
+        <div class="ai-panel-header">
+            <div class="ai-panel-header-left">
+                <div class="ai-avatar">🤖</div>
+                <div>
+                    <h3>Trợ Lý AI</h3>
+                    <span class="ai-badge">GEMINI · F&B</span>
+                </div>
+            </div>
+            <button id="close-ai" onclick="toggleAIPanel()">&times;</button>
+        </div>
+        <div id="ai-messages" class="ai-messages">
+            <div class="ai-msg system">Xin chào! Tôi là trợ lý AI chuyên về F&B. Hãy hỏi tôi bất cứ điều gì! ☕</div>
+        </div>
+        <div class="ai-suggestions" id="ai-suggestions">
+            <button class="ai-sug-btn" onclick="handleQuickSuggestion('Cách pha Latte đá')">☕ Pha Latte</button>
+            <button class="ai-sug-btn" onclick="handleQuickSuggestion('Gợi ý combo cho khách')">🎯 Gợi ý combo</button>
+            <button class="ai-sug-btn" onclick="handleQuickSuggestion('Công thức Matcha Latte')">🍵 Matcha</button>
+            <button class="ai-sug-btn" onclick="handleQuickSuggestion('Khách thích ít đường, gợi ý món?')">💬 Tư vấn</button>
+        </div>
+        <div class="ai-input-area">
+            <textarea id="ai-input" placeholder="Hỏi AI về pha chế, công thức, tư vấn..." rows="1"></textarea>
+            <button id="ai-send" onclick="sendAIMessage()" title="Gửi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- ===== FLOATING ADMIN ===== -->
     <a href="admin.html" id="admin-fab" title="Mở trang quản lý thực đơn">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
